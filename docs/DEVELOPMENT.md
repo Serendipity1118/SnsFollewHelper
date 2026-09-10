@@ -21,9 +21,9 @@ Android SDKのライセンスはすでに承諾済み。
 ユーザー環境変数に`ANDROID_HOME`を設定し、ユーザーPATHにAndroidの`platform-tools`と`emulator`を追加した。
 環境変数を反映するにはターミナルやエディターを開き直す。
 
-`follow_support_app/`は`flutter create --platforms=android,ios --project-name follow_support_app follow_support_app`で作成した雛形。
-現在の画面とテストはFlutter標準のカウンターサンプルで、業務機能やRiverpod / Drift等の追加依存は未実装。
-アプリIDは雛形の`com.example.follow_support_app`で、公開時には正式なIDと署名設定が必要。
+`follow_support_app/`は`flutter create --platforms=android,ios --project-name follow_support_app follow_support_app`で作成し、要件に沿ったMVPを実装済み。
+Riverpodによる依存注入、Drift / SQLiteのローカルDB、CSV入出力、ZIPバックアップ、外部HTTPS起動、手動結果入力、安全制限、各管理画面と自動テストを含む。
+アプリIDは開発用の`com.example.follow_support_app`で、公開時には正式なIDと署名設定が必要。
 
 ## Windowsで開発を開始する
 
@@ -102,10 +102,13 @@ APK出力先: `follow_support_app/build/app/outputs/flutter-apk/app-debug.apk`
 - `flutter test`: 標準Widgetテスト1件成功
 - `flutter build apk --debug`: 成功
 - 専用Android 16エミュレーターへのAPKインストール: 成功
-- アプリの前面表示、Dart VM起動ログ、カウンター画面のスクリーンショットを確認
+- アプリの前面表示、Dart VM起動ログ、当時の雛形画面のスクリーンショットを確認
 - `flutter doctor -v`: Flutter / Android toolchain / ネットワーク正常
 
 `flutter doctor`にはVisual Studio未導入の警告が残る。これはWindowsデスクトップアプリ用で、このプロジェクトのAndroid開発には不要。
+
+実装完了後の検証結果は `docs/IMPLEMENTATION_REPORT.md`、人による受け入れ確認は `docs/MANUAL_TEST.md` を参照する。
+substドライブとPub cacheが別ドライブになるWindows環境でKotlin差分コンパイルのパス変換が失敗するため、`android/gradle.properties`で`kotlin.incremental=false`を設定している。
 
 ## iOS
 

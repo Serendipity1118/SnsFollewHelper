@@ -10,11 +10,14 @@ Any action on a third-party social network is performed manually by the user in 
 
 Key features:
 - CSV import
+- X and Instagram targets with multiple operating-account labels
 - Target list, search, and filters
-- Manual status tracking
+- Eight manual result categories
 - Work history
-- Safety margins to discourage excessive short-term activity
-- CSV export
+- Per-account rolling one-hour and 24-hour safety margins
+- CSV export and ZIP backup with additive restore
+- Recovery of unfinished manual result entry
+- Fictional sample data that never opens an external profile
 - Local-only data storage
 
 This app is not affiliated with, endorsed by, or sponsored by X, Instagram, Meta, or other third-party social-network services.
