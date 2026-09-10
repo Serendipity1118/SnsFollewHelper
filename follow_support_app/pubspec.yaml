@@ -34,8 +34,21 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  drift: ^2.34.4
+  drift_flutter: ^0.3.1
+  file_picker: ^12.2.0
+  csv: ^8.0.0
+  url_launcher: ^6.3.2
+  uuid: ^4.6.0
+  intl: ^0.20.3
+  path_provider: ^2.1.6
+  archive: ^4.2.0
+  charset_converter: ^2.4.0
 
 dev_dependencies:
+  integration_test:
+    sdk: flutter
   flutter_test:
     sdk: flutter
 
@@ -45,6 +58,32 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  build_runner: ^2.15.1
+  drift_dev: ^2.34.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.7
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/follow_work_notes_icon.png
+  adaptive_icon_background: "#071B4F"
+  adaptive_icon_foreground: assets/follow_work_notes_icon.png
+  min_sdk_android: 24
+  remove_alpha_ios: true
+
+flutter_native_splash:
+  color: "#F5F8F7"
+  image: assets/follow_work_notes_icon.png
+  android: true
+  ios: true
+  web: false
+  android_gravity: center
+  ios_content_mode: center
+  android_12:
+    color: "#F5F8F7"
+    image: assets/follow_work_notes_icon.png
+    icon_background_color: "#F5F8F7"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -56,6 +95,11 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/follow_work_notes_icon.png
+    - assets/sns_follow_helper_logo.png
+    - assets/sample_targets.csv
+    - assets/privacy_policy.txt
 
   # To add assets to your application, add an assets section, like this:
   # assets:
