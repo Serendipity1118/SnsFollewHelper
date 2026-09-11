@@ -23,11 +23,11 @@ Android SDKのライセンスはすでに承諾済み。
 
 `follow_support_app/`は`flutter create --platforms=android,ios --project-name follow_support_app follow_support_app`で作成し、要件に沿ったMVPを実装済み。
 Riverpodによる依存注入、Drift / SQLiteのローカルDB、CSV入出力、ZIPバックアップ、外部HTTPS起動、手動結果入力、安全制限、各管理画面と自動テストを含む。
-アプリIDは開発用の`com.example.follow_support_app`で、公開時には正式なIDと署名設定が必要。
+Android application IDとiOS bundle IDは`jp.serendipy.snsfollowhelper`。
 
 ## Windowsで開発を開始する
 
-このワークスペースのパスには日本語の`初期設定`が含まれるため、直接AndroidビルドするとAndroid Gradle Pluginが拒否する。
+このワークスペースのパスには日本語の`初実装`が含まれるため、直接AndroidビルドするとAndroid Gradle PluginやDart AOT生成が失敗する場合がある。
 `subst`で同じフォルダーを英数字のドライブパスから開いて開発する。
 ファイルのコピーや移動は行わず、`S:\`と元のワークスペースは同じファイルを参照する。
 

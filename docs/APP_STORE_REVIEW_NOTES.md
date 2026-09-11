@@ -30,4 +30,4 @@ For user-imported records, HTTPS URLs are delegated to the operating system, whi
 
 ## Before submission
 
-The current artifact is a development build. Confirm the final application ID, signing/provisioning, provider name, support contact, public privacy-policy URL, store screenshots, and store privacy disclosures before submission. iOS signing/build/device review requires macOS and Xcode.
+The application ID and bundle ID are `jp.serendipy.snsfollowhelper`. Confirm signing/provisioning, provider name, support contact, public privacy-policy URL, store screenshots, and store privacy disclosures before submission. iOS signing/build/device review requires macOS and Xcode.

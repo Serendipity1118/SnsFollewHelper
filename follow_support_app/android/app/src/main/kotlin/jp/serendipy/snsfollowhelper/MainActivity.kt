@@ -1,4 +1,4 @@
-package com.example.follow_support_app
+package jp.serendipy.snsfollowhelper
 
 import io.flutter.embedding.android.FlutterActivity
 

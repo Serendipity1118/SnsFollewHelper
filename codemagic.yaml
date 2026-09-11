@@ -1,0 +1,120 @@
+# Signed store builds for the Flutter app in follow_support_app/.
+# Required Codemagic resources are documented in docs/CODEMAGIC.md.
+definitions:
+  env_versions: &env_versions
+    flutter: 3.41.4
+    xcode: latest
+    cocoapods: default
+  scripts:
+    - &pub_get
+      name: Flutter pub get
+      script: |
+        cd follow_support_app
+        flutter pub get
+    - &generate
+      name: Generate Drift code
+      script: |
+        cd follow_support_app
+        dart run build_runner build
+    - &analyze
+      name: Flutter analyze
+      script: |
+        cd follow_support_app
+        flutter analyze
+    - &test
+      name: Flutter unit and widget tests
+      script: |
+        cd follow_support_app
+        flutter test
+
+workflows:
+  android-release:
+    name: Android Release (AAB + APK to Play internal)
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      flutter: 3.41.4
+      java: 17
+      groups:
+        - google_play
+      android_signing:
+        - snsfollowhelper_upload
+      vars:
+        PACKAGE_NAME: jp.serendipy.snsfollowhelper
+    scripts:
+      - name: Set up Android signing
+        script: |
+          cat > follow_support_app/android/key.properties <<EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=$CM_KEYSTORE_PATH
+          EOF
+      - *pub_get
+      - *generate
+      - *analyze
+      - *test
+      - name: Determine Android build number
+        script: |
+          LATEST=$(google-play get-latest-build-number \
+            --package-name "$PACKAGE_NAME" \
+            --credentials @env:GCLOUD_SERVICE_ACCOUNT_CREDENTIALS 2>/dev/null || true)
+          case "$LATEST" in
+            ''|*[!0-9]*) LATEST=0 ;;
+          esac
+          echo "BUILD_NUMBER=$((LATEST + 1))" >> "$CM_ENV"
+      - name: Build signed AAB and APK
+        script: |
+          set -e
+          cd follow_support_app
+          flutter build appbundle --release --build-number="$BUILD_NUMBER"
+          flutter build apk --release --build-number="$BUILD_NUMBER"
+    artifacts:
+      - follow_support_app/build/app/outputs/bundle/release/*.aab
+      - follow_support_app/build/app/outputs/flutter-apk/app-release.apk
+      - follow_support_app/build/app/outputs/mapping/release/mapping.txt
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: false
+
+  ios-appstore:
+    name: iOS App Store (IPA to TestFlight)
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Codemagic
+    environment:
+      <<: *env_versions
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: jp.serendipy.snsfollowhelper
+    scripts:
+      - name: Set up iOS code signing
+        script: |
+          xcode-project use-profiles \
+            --project follow_support_app/ios/Runner.xcodeproj
+      - *pub_get
+      - *generate
+      - *analyze
+      - *test
+      - name: Install CocoaPods
+        script: |
+          cd follow_support_app/ios
+          pod install --repo-update
+      - name: Build signed IPA
+        script: |
+          set -e
+          cd follow_support_app
+          flutter build ipa --release \
+            --build-number="$PROJECT_BUILD_NUMBER" \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - follow_support_app/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false

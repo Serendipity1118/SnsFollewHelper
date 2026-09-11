@@ -80,7 +80,7 @@ APK: `follow_support_app/build/app/outputs/flutter-apk/app-debug.apk`
 
 ## 未確定・制約
 
-- 公開用application ID / bundle ID、署名・Provisioning、提供者名、問い合わせ先、プライバシーポリシー公開URLは事業者情報が必要なため未確定。
+- application ID / bundle IDは`jp.serendipy.snsfollowhelper`に決定済み。署名・Provisioning、提供者名、問い合わせ先、プライバシーポリシー公開URLは別途設定が必要。
 - iOSビルド・実機確認はMac / Xcode環境で行う。
 - 実在SNSでのリンク先、ログイン運用元、操作結果は人が確認する。アプリは取得・判定しない。
 - ストア公開前に掲載文、スクリーンショット、App Privacy / Data Safetyを最終確認する。
