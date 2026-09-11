@@ -45,8 +45,8 @@
 | Play 掲載情報 | 日本語 (デフォルト) と en-US。アイコン、フィーチャーグラフィック、スクリーンショット 6 枚 |
 | Play ストアの設定 | カテゴリ「仕事効率化」、連絡先 develop@serendipy.jp |
 | Play アプリのコンテンツ | 10 件すべて申告済み。審査へ送信済み (ダッシュボードで「審査中」) |
-| Codemagic `ios-appstore` | IPA のビルドと TestFlight へのアップロードは成功。beta review 提出で失敗 → テスト情報を入れたので再実行待ち |
-| TestFlight | 1.0.0 (1) を内部グループに配信 |
+| Codemagic `ios-appstore` | #2 と #3 は beta review 提出で失敗 (連絡先、次に説明文が不足)。テスト情報をそろえた #4 は `finished` (Post-processing まで成功) |
+| TestFlight | 内部グループ `SnsFollowHelper Internal` に 1.0.0 (1)〜(3) を配信。ビルド番号は TestFlight の最新 + 1 で採番されている |
 | 撮影用 AVD | `SnsFollowHelper_Screenshot` を削除済み |
 
 ## ストア素材
