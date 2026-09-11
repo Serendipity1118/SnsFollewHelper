@@ -27,6 +27,7 @@
 | App Store Connect | SnsFollowHelper (アプリ ID 6810976442、SKU `snsfollowhelper`、主言語 日本語、アクセス制限なし) |
 | TestFlight テスト情報 | フィードバック用メール serendip.takayanagi@gmail.com、ベータ版 App Review の連絡先 (利用者が入力)、プライバシーポリシー URL、審査メモ (英語、`APP_STORE_REVIEW_NOTES.md` の要約) |
 | TestFlight 内部グループ | `SnsFollowHelper Internal`。**自動配信を有効** (作成後は変更できない)。テスター serendip.takayanagi@gmail.com (Account Holder)。develop@serendipy.jp は App Store Connect のユーザーに無いので選べなかった |
+| Play サービスアカウント | `codemagic-publish@pokeplus.iam.gserviceaccount.com` (pokePlus と共用) のアプリの権限にフォロー作業ノートを追加。「アプリ情報の閲覧」「アプリの品質情報の閲覧」(自動)「テスト版トラックとしてのアプリのリリース」の 3 件。製品版のリリースとテスターリストの編集は付けていない |
 | Play 内部テスト | メーリングリスト `SnsFollowHelper-internal-testers` (serendip.takayanagi@gmail.com)。オプトイン URL <https://play.google.com/apps/internaltest/4701519831831799386> |
 
 ## ストア素材
