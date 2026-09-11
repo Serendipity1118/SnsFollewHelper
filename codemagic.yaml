@@ -73,13 +73,11 @@ workflows:
       - follow_support_app/build/app/outputs/bundle/release/*.aab
       - follow_support_app/build/app/outputs/flutter-apk/app-release.apk
       - follow_support_app/build/app/outputs/mapping/release/mapping.txt
-    # Disabled until the first AAB has been uploaded to Play by hand and the
-    # service account has been granted access to this app.
-    # publishing:
-    #   google_play:
-    #     credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-    #     track: internal
-    #     submit_as_draft: false
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: false
 
   ios-appstore:
     name: iOS App Store (IPA to TestFlight)
