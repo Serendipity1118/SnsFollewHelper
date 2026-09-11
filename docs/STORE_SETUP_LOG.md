@@ -34,6 +34,20 @@
 | Play サービスアカウント | `codemagic-publish@pokeplus.iam.gserviceaccount.com` (pokePlus と共用) のアプリの権限にフォロー作業ノートを追加。「アプリ情報の閲覧」「アプリの品質情報の閲覧」(自動)「テスト版トラックとしてのアプリのリリース」の 3 件。製品版のリリースとテスターリストの編集は付けていない |
 | Play 内部テスト | メーリングリスト `SnsFollowHelper-internal-testers` (serendip.takayanagi@gmail.com)。オプトイン URL <https://play.google.com/apps/internaltest/4701519831831799386> |
 
+## 進み具合 (2026-09-11)
+
+| 項目 | 状態 |
+| --- | --- |
+| プライバシーポリシー公開 | 完了 (200 を確認) |
+| Codemagic `android-release` | 成功 (ビルド #2、versionCode 1)。`publishing:` は初回手動アップロード後に戻した |
+| Play 内部テスト | 初回リリースを手動で公開済み (9月11日 18:05) |
+| Play 掲載情報 | 日本語 (デフォルト) と en-US。アイコン、フィーチャーグラフィック、スクリーンショット 6 枚 |
+| Play ストアの設定 | カテゴリ「仕事効率化」、連絡先 develop@serendipy.jp |
+| Play アプリのコンテンツ | 10 件すべて申告済み。審査へ送信済み (ダッシュボードで「審査中」) |
+| Codemagic `ios-appstore` | IPA のビルドと TestFlight へのアップロードは成功。beta review 提出で失敗 → テスト情報を入れたので再実行待ち |
+| TestFlight | 1.0.0 (1) を内部グループに配信 |
+| 撮影用 AVD | `SnsFollowHelper_Screenshot` を削除済み |
+
 ## ストア素材
 
 | ファイル | 用途 |
