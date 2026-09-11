@@ -46,6 +46,20 @@
 画像は `follow_support_app/tool/render_store_assets.ps1` で作り直せる。元アイコンは角丸で四隅が透過
 (中央も alpha 252) なので、角丸の内側の正方形を切り出して不透明な背景に重ねている。
 
+## 申告の根拠
+
+リリース APK (`flutter build apk --release`) の権限を `aapt2 dump permissions` で確かめた。
+宣言されているのは Flutter が付ける `jp.serendipy.snsfollowhelper.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`
+だけで、`com.google.android.gms.permission.AD_ID` も `android.permission.INTERNET` も無い。
+
+| 申告 | 回答 | 根拠 |
+| --- | --- | --- |
+| 広告 | 含まない | 広告 SDK なし |
+| 広告 ID | 使用しない | `AD_ID` 権限なし |
+| ログインの詳細 | ログイン不要 | アカウント機能なし |
+| データ セーフティ | 収集も共有もしない | 端末内の SQLite のみ。`INTERNET` 権限なし。プロフィールを開く操作は OS に URL を渡すだけ |
+| 行政アプリ / 金融取引機能 / 健康 | いずれも該当なし | |
+
 ## 踏んだもの
 
 - **初回の `ios-appstore` が `Install CocoaPods` で落ちた。** `file_picker_darwin` が iOS 14.0 を要求するが、
