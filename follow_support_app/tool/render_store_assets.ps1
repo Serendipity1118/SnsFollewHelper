@@ -91,7 +91,7 @@ $g.FillRectangle((New-Object System.Drawing.SolidBrush($navy)), $iconX, $iconY, 
 $g.DrawImage($source, (New-Object System.Drawing.Rectangle($iconX, $iconY, $iconSize, $iconSize)), $crop, [System.Drawing.GraphicsUnit]::Pixel)
 $g.ResetClip()
 
-$title = [regex]::Unescape('\u30D5\u30A9\u30ED\u30FC\u4F5C\u696D\u30CE\u30FC\u30C8')
+$title = 'SnsFollowHelper'
 $subtitle = [regex]::Unescape('\u5BFE\u8C61\u30FB\u9032\u6357\u30FB\u5C65\u6B74\u3092\u7AEF\u672B\u5185\u3067\u7BA1\u7406')
 $white = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::White)
 $soft = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(220, 255, 255, 255))

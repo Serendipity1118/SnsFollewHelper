@@ -11,7 +11,7 @@ class FollowSupportApp extends StatelessWidget {
   const FollowSupportApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'フォロー作業ノート',
+    title: 'SnsFollowHelper',
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       useMaterial3: true,
@@ -131,7 +131,7 @@ class _StartupScreenState extends ConsumerState<StartupScreen> {
   Widget build(BuildContext context) {
     final choices = accounts.where((a) => a.platform == platform).toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('フォロー作業ノート')),
+      appBar: AppBar(title: const Text('SnsFollowHelper')),
       body: busy
           ? const Center(child: CircularProgressIndicator())
           : PageBody(

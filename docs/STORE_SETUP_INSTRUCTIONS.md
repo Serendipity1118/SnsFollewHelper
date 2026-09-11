@@ -1,6 +1,6 @@
 # ストア配信のセットアップ指示書
 
-「フォロー作業ノート」(`jp.serendipy.snsfollowhelper`) を Codemagic でビルドし、
+「SnsFollowHelper」(`jp.serendipy.snsfollowhelper`) を Codemagic でビルドし、
 Google Play の内部テストと TestFlight へ配信できる状態にするまでの作業指示。
 
 作業者は Claude Code のエージェントを想定する。ブラウザ操作ができる前提で書いている。
@@ -92,7 +92,7 @@ Google Play の内部テストと TestFlight へ配信できる状態にする�
 | --- | --- |
 | Android application ID | `jp.serendipy.snsfollowhelper` |
 | iOS bundle ID | `jp.serendipy.snsfollowhelper` |
-| 表示名 | フォロー作業ノート |
+| 表示名 | SnsFollowHelper |
 | Flutter プロジェクト | `follow_support_app/` |
 | バージョン | `1.0.0+1` (`follow_support_app/pubspec.yaml`) |
 | Flutter | 3.41.4 (ローカルと同じ値に固定済み) |
@@ -117,7 +117,7 @@ WSIBrowser の 2 つの手順書に沿って進める。**以下はこのアプ�
    Team settings → Global variables and secrets → `google_play` の鉛筆 → Application access で
    SnsFollewHelper を on にする。**新しいアプリは既定で全部 off なので、ここを忘れると
    `Application does not have access to variable group(s): google_play` でビルドが始まらない。**
-5. **Play Console にアプリを作る。** アプリ名は「フォロー作業ノート」、日本語、アプリ、無料。
+5. **Play Console にアプリを作る。** アプリ名は「SnsFollowHelper」、日本語、アプリ、無料。
 6. **`android-release` を回す。** 最初は `publishing:` をコメントアウトして AAB だけ作る。
 7. **初回 AAB を手で内部テストへ上げる。** ここで Play App Signing が有効になる。
 8. **サービスアカウントに権限を付ける。** Play Console → ユーザーと権限 → pokePlus 用の
@@ -130,7 +130,7 @@ WSIBrowser の 2 つの手順書に沿って進める。**以下はこのアプ�
 ### 5-2. iOS
 
 1. **App ID を作る。** Apple Developer で `jp.serendipy.snsfollowhelper` を登録する。
-2. **App Store Connect にアプリレコードを作る。** 名前は「フォロー作業ノート」。
+2. **App Store Connect にアプリレコードを作る。** 名前は「SnsFollowHelper」。
    作成後、**URL に出る数値のアプリ ID を控える。** 次の手順で使う。
 3. **配布プロファイルを作る。**
    <https://developer.apple.com/account/resources/profiles/add> で

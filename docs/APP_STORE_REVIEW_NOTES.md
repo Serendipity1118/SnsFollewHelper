@@ -1,4 +1,4 @@
-﻿# App Store Review Notes — Follow Work Notes
+﻿# App Store Review Notes — SnsFollowHelper
 
 This app does not automate any action on third-party social networking services.
 It manages user-provided profile targets and manually recorded results locally using SQLite.

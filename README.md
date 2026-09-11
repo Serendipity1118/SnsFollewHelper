@@ -1,4 +1,4 @@
-﻿# フォロー作業ノート
+﻿# SnsFollowHelper
 
 X / Instagramの対象リストと手動の作業結果を端末内で管理するFlutterアプリです。
 SNSの自動操作、認証情報の取得、外部Backendはありません。

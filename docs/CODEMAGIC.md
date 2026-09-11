@@ -31,7 +31,7 @@ Google Play APIによる自動配信は、同じpackage nameの初回AABをPlay 
 ## iOSの事前設定
 
 1. Apple Developerで`jp.serendipy.snsfollowhelper`のApp IDを作る。
-2. App Store Connectに「フォロー作業ノート」のアプリレコードを作る。
+2. App Store Connectに「SnsFollowHelper」のアプリレコードを作る。
 3. App Store配布用Provisioning Profileを作る。
 4. CodemagicのCode signing identitiesへApple Distribution証明書とProfileを登録する。
 5. Profileのbundle IDが`jp.serendipy.snsfollowhelper`と一致することを確認する。

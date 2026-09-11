@@ -255,7 +255,7 @@ class AboutScreen extends StatelessWidget {
     body: PageBody(
       children: [
         Image.asset('assets/follow_work_notes_icon.png', height: 120),
-        Text('フォロー作業ノート', style: Theme.of(context).textTheme.headlineSmall),
+        Text('SnsFollowHelper', style: Theme.of(context).textTheme.headlineSmall),
         const Text(
           'バージョン 1.0.0\n\n利用者が用意したプロフィール一覧と、手動で判断した作業結果を端末内に保存するアプリです。',
         ),
@@ -274,7 +274,7 @@ class AboutScreen extends StatelessWidget {
         TextButton(
           onPressed: () => showLicensePage(
             context: context,
-            applicationName: 'フォロー作業ノート',
+            applicationName: 'SnsFollowHelper',
             applicationVersion: '1.0.0',
           ),
           child: const Text('オープンソースライセンス'),

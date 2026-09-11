@@ -1,5 +1,8 @@
 # Store Listing (English Draft)
 
+## App name
+SnsFollowHelper
+
 ## Short description
 Manage social profile review targets, progress, and history locally on your device.
 
