@@ -39,7 +39,8 @@
 | 項目 | 状態 |
 | --- | --- |
 | プライバシーポリシー公開 | 完了 (200 を確認) |
-| Codemagic `android-release` | 成功 (ビルド #2、versionCode 1)。`publishing:` は初回手動アップロード後に戻した |
+| Codemagic `android-release` | 成功 (ビルド #2、versionCode 1)。`publishing:` を戻したビルド #3 で versionCode 2 が内部テストへ自動公開された (`Status: completed`) |
+| 実機インストール | Android (内部テスト) と iOS (TestFlight) の両方で確認 |
 | Play 内部テスト | 初回リリースを手動で公開済み (9月11日 18:05) |
 | Play 掲載情報 | 日本語 (デフォルト) と en-US。アイコン、フィーチャーグラフィック、スクリーンショット 6 枚 |
 | Play ストアの設定 | カテゴリ「仕事効率化」、連絡先 develop@serendipy.jp |
@@ -87,6 +88,14 @@
   ベータ版 App Review の連絡先 (姓・名・電話番号・メール) が無いと
   `Complete test information is required to submit application ... for external testing` になる。
   アップロード自体は済んでいるので、内部テストグループへの追加はできる
+- **テスト情報に連絡先を入れた後の `ios-appstore` #3 も beta review 提出で失敗した。** 今度は
+  `Beta App Description is missing`。TestFlight →「テスト情報」の「ベータ版 App の説明」も外部テストの提出に必須
+- `ios-appstore` のアップロード時に警告 90068: 2027 年春から MinimumOSVersion 15.0 以上が必須になる。
+  現在は file_picker に合わせて 14.0。WSIBrowser は 15.0
+- `android-release` の Publishing で `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` が非推奨と警告される。
+  変数グループ `google_play` は pokePlus などと共用なので、名前を変えるときは全アプリのワークフローを直す
+- **Play の「新しいリリースを作成」の「ライブラリから追加」には、すでにトラックに入っている App Bundle は出ない。**
+  Codemagic のログで `Successfully published App Bundle to Google Play track internal` を確認する方が確実
 - **Play の内部テストのテスタータブで、新しく作ったメーリングリストは作成時にチェックが入った状態になり、
   「保存」ボタンは押せないまま。** 読み込み直してもチェックが残っていれば保存されている
 - **Play の掲載情報の画像は、右側のアセット ライブラリ パネルからアップロードして欄に適用する。**
