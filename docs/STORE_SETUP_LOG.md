@@ -13,6 +13,10 @@
 | スクリーンショット | 撮影用 AVD `SnsFollowHelper_Screenshot` (1080x1920) を一時的に作り、撮影後に削除 |
 | 変数グループ `google_play` の公開範囲 | chikenPortal / pokePlus / SnsFollewHelper / WSIBrowser を個別に on。All applications は off |
 | Play の「自動保護」 | 既定のまま (インストーラ チェックを追加する) |
+| ターゲット ユーザー | 18 歳以上のみ |
+| カテゴリ | Play は「仕事効率化」、App Store は「仕事効率化 (Productivity)」 |
+| コンテンツのレーティング | 「ユーティリティ、生産性向上、通信、その他」。暴力・性的表現・不適切な言葉・規制薬物・ギャンブル・ユーザー間のやり取り・現在地の共有・デジタル商品の購入はすべて「いいえ」。**「ウェブブラウザまたは検索エンジンですか」は「いいえ」** (WSI Browser とは違う。外部 SNS は OS 経由で別アプリが開く) |
+| テスター | Play 内部テストは serendip.takayanagi@gmail.com、TestFlight 内部テストも serendip.takayanagi@gmail.com |
 | アプリ名 | **SnsFollowHelper** に統一。両ストアの掲載名、端末の表示名 (AndroidManifest / Info.plist)、アプリ内のタイトル、文書のすべて。Play Console は旧名「フォロー作業ノート」で作成したので、掲載情報で名前を変える |
 
 ## 登録したもの
