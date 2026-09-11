@@ -38,8 +38,14 @@ Google Play APIによる自動配信は、同じpackage nameの初回AABをPlay 
 6. CodemagicのApp Store Connect integrationは、WSIBrowserと同じ`Codemagic`を使う。
 
 `ios_signing`はbundle IDと`app_store`配布種別で一致する証明書・Profileを取得し、
-`xcode-project use-profiles`でRunnerプロジェクトへ適用する。ビルド番号には
-Codemagicの`PROJECT_BUILD_NUMBER`を使う。
+`xcode-project use-profiles`でRunnerプロジェクトへ適用する。ビルド番号は
+TestFlightの最新ビルド番号 + 1（初回は1）。App Store ConnectのアプリID
+`6810976442`を`APP_STORE_APP_ID`として`codemagic.yaml`に持たせている。
+Codemagic以外からアップロードしたビルドがあっても番号が重複しない。
+
+配布プロファイルはApple側の名前が`SnsFollowHelper AppStore`、Codemagicの参照名が
+`snsfollowhelper_appstore`。Codemagicはプロファイルを自動作成しないので、
+Apple Developerで作ってからCode signing identitiesへFetchする。
 
 `Info.plist`には`ITSAppUsesNonExemptEncryption=false`を設定している。このアプリが使うのは
 HTTPSとOS標準の暗号機能だけである。

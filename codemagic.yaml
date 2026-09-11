@@ -92,6 +92,10 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: jp.serendipy.snsfollowhelper
+      vars:
+        # Numeric App Store Connect app id for "SnsFollowHelper", used to look up
+        # the latest TestFlight build number.
+        APP_STORE_APP_ID: 6810976442
     scripts:
       - name: Set up iOS code signing
         script: |
@@ -105,12 +109,23 @@ workflows:
         script: |
           cd follow_support_app/ios
           pod install --repo-update
+      - name: Determine iOS build number
+        script: |
+          # TestFlight rejects a build number it has already seen, including builds
+          # uploaded from outside Codemagic, so take the latest and add one. The
+          # first build runs before anything is uploaded, so fall back to 0.
+          LATEST=$(app-store-connect get-latest-testflight-build-number \
+            "$APP_STORE_APP_ID" 2>/dev/null || true)
+          case "$LATEST" in
+            ''|*[!0-9]*) LATEST=0 ;;
+          esac
+          echo "BUILD_NUMBER=$((LATEST + 1))" >> "$CM_ENV"
       - name: Build signed IPA
         script: |
           set -e
           cd follow_support_app
           flutter build ipa --release \
-            --build-number="$PROJECT_BUILD_NUMBER" \
+            --build-number="$BUILD_NUMBER" \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - follow_support_app/build/ios/ipa/*.ipa

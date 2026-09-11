@@ -22,7 +22,9 @@
 | GitHub Pages | main の `/docs`。<https://serendipity1118.github.io/SnsFollewHelper/privacy.html> |
 | Codemagic | アプリ SnsFollewHelper (project type は Other)。keystore 参照名 `snsfollowhelper_upload` |
 | Google Play Console | `jp.serendipy.snsfollowhelper` (アプリ ID 4975189214274327445)。作成時の名前は旧名のため、掲載情報で SnsFollowHelper に変える |
-| Apple Developer | App ID `jp.serendipy.snsfollowhelper` (名前 SnsFollowHelper、Capabilities なし) |
+| Apple Developer | App ID `jp.serendipy.snsfollowhelper` (名前 SnsFollowHelper、Capabilities なし)。配布プロファイル `SnsFollowHelper AppStore` (証明書 kazumi takayanagi、期限 2027-03-31) |
+| Codemagic (iOS) | プロファイル参照名 `snsfollowhelper_appstore` |
+| App Store Connect | SnsFollowHelper (アプリ ID 6810976442、SKU `snsfollowhelper`、主言語 日本語、アクセス制限なし) |
 
 ## ストア素材
 
