@@ -40,6 +40,19 @@
 
 ## 踏んだもの
 
+- **初回の `ios-appstore` が `Install CocoaPods` で落ちた。** `file_picker_darwin` が iOS 14.0 を要求するが、
+  リポジトリに `ios/Podfile` が無く、CocoaPods が iOS 13.0 と見なして解決できなかった
+  (`required a higher minimum deployment target`)。`platform :ios, '14.0'` の Podfile をコミットし、
+  `project.pbxproj` の `IPHONEOS_DEPLOYMENT_TARGET` も 14.0 に揃えた。Windows では iOS を
+  ビルドできないので、この種の失敗は Codemagic で初めて分かる
+- **Podfile の修正後、`ios-appstore` は IPA のビルドと TestFlight へのアップロードまで通ったが、
+  最後の「TestFlight beta review への提出」で失敗した。** `submit_to_testflight: true` は外部テスト用の
+  ベータ版審査に出す設定で、App Store Connect の TestFlight →「テスト情報」にフィードバック用メールと
+  ベータ版 App Review の連絡先 (姓・名・電話番号・メール) が無いと
+  `Complete test information is required to submit application ... for external testing` になる。
+  アップロード自体は済んでいるので、内部テストグループへの追加はできる
+- **Play の内部テストのテスタータブで、新しく作ったメーリングリストは作成時にチェックが入った状態になり、
+  「保存」ボタンは押せないまま。** 読み込み直してもチェックが残っていれば保存されている
 - **keystore の alias に先頭の空白が入ると `Alias " snsfollowhelper" does not exist in keystore` になる。**
   エラー文の引用符の内側に空白が見えたら入力値を疑う
 - **Codemagic の変数グループの Application access は、表示が実際の設定と合っていなかった。**
