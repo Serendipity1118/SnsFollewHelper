@@ -1,0 +1,5 @@
+﻿優先度,都道府県,店舗,キャスト名,handle,プロフィールURL,出現回数,最終更新日,状態,実施日
+1,tokyo,ShopA,あい,alice_1,https://cast.example/p/1,2,2026/09/01,済,2026-09-01
+2,osaka,ShopB,ぶー,bob,https://cast.example/p/3,1,2026-09-02,当日,
+3,fukui,ShopD,でー,eve,https://cast.example/p/6,1,2026/09/10,スキップ,2026-09-02
+4,tokyo,ShopZ,消えた,gone,https://cast.example/p/99,1,2026/01/01,済,2026-01-02

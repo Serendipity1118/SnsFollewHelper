@@ -1,0 +1,12 @@
+﻿優先度,都道府県,店舗,キャスト名,handle,プロフィールURL,出現回数,最終更新日,状態,実施日
+1,tokyo,ShopF,く,frank,https://cast.example/p/16,1,2026/09/10,未,
+2,tokyo,ShopF,け,gina,https://cast.example/p/17,1,2026/09/10,未,
+3,tokyo,ShopJ,<b>た</b>,kate,https://cast.example/p/22,1,2026/09/09,未,
+4,tokyo,ShopG,(無名),hank,javascript:alert(1),1,2026/13/40,未,
+5,tokyo,ShopA,あい（ほか1名）,alice_1,https://cast.example/p/1,2,2026/09/01,済,2026-09-01
+6,osaka,ShopB,ぶー,bob,https://cast.example/p/3,1,2026-09-02,当日,
+7,osaka,ShopB,ぶー2,carol,https://cast.example/p/4,1,,未,
+8,_hokkaido,ShopC,しー,dave,,1,2026.07.15,未,
+9,aichi,ShopH,こ,ivy,https://cast.example/p/19,1,2026/9/5,未,
+10,kanagawa,ShopI,さ（ほか1名）,jack,https://cast.example/p/21,2,2026/09/05,未,
+11,fukui,ShopD,でー,eve,https://cast.example/p/6,1,2026/09/10,スキップ,2026-09-02

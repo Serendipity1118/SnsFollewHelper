@@ -9,3 +9,8 @@
 - ユーザーが起動したエミュレーターは、検証終了後もそのまま維持する。
 
 開発環境と起動手順は `docs/DEVELOPMENT.md` を参照する。
+
+## Webサービス（`web-service/`）
+
+- Flutterアプリとは分離して管理する（ユーザー指定 2026-09-28）。`follow_support_app/` 側のコードに依存・変更しない。
+- Node.js + Hono + SQLite。手順は `web-service/README.md`。Xの自動操作は実装しない。

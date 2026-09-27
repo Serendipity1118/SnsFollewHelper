@@ -4,6 +4,7 @@ X / Instagramの対象リストと手動の作業結果を端末内で管理す�
 SNSの自動操作、認証情報の取得、外部Backendはありません。
 
 - アプリ: `follow_support_app/`
+- Xフォロー優先キューのローカルWebサービス（Flutterとは独立）: [web-service](web-service/README.md)
 - 最新の確定仕様: [要件決定事項](docs/要件決定事項.md)
 - 開発・起動: [DEVELOPMENT](docs/DEVELOPMENT.md)
 - 実装と検証: [実装完了報告](docs/IMPLEMENTATION_REPORT.md)
