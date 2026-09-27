@@ -20,7 +20,16 @@ npm run dev      # http://127.0.0.1:8787 （ファイル変更で自動再起動
 npm start        # 通常起動
 ```
 
-環境変数: `PORT`（既定 8787）、`DB_PATH`（既定 `web-service/data/app.db`）。
+環境変数: `PORT`（既定 8787）、`DB_PATH`。
+
+DBの場所（起動ログの `DB:` に表示）:
+
+1. `DB_PATH` を指定したらそのファイル
+2. 指定がなければ、**どのワークツリーから起動しても本体チェックアウトの `web-service/data/app.db`**
+   （`git rev-parse --git-common-dir` の親。この環境では `C:\00.git_repo\SnsFollewHelper\web-service\data\app.db`）
+3. git リポジトリ外なら `web-service/data/app.db`
+
+`data/` は git 管理外。
 
 ## 使い方
 

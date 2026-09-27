@@ -1,6 +1,6 @@
-import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { createApp } from "./app";
+import { resolveDbPath } from "./config/dbPath";
 import { openDatabase } from "./db/database";
 import { createQueueService } from "./services/queueService";
 
@@ -18,7 +18,8 @@ function readPort(raw: string | undefined): number {
 }
 
 const port = readPort(process.env.PORT);
-const dbPath = process.env.DB_PATH || fileURLToPath(new URL("../data/app.db", import.meta.url));
+// どのワークツリーから起動しても同じDB（本体チェックアウトの web-service/data/app.db）を使う
+const { path: dbPath, source: dbSource } = resolveDbPath();
 const db = openDatabase(dbPath);
 const app = createApp({
   service: createQueueService(db),
@@ -26,7 +27,7 @@ const app = createApp({
 });
 
 const server = serve({ fetch: app.fetch, port, hostname: HOSTNAME }, (info) => {
-  console.info(`Xフォロー優先キュー: http://${HOSTNAME}:${info.port}  (DB: ${dbPath})`);
+  console.info(`Xフォロー優先キュー: http://${HOSTNAME}:${info.port}  (DB: ${dbPath} [${dbSource}])`);
 });
 
 function shutdown() {
