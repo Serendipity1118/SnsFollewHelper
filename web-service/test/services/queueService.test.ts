@@ -151,6 +151,29 @@ describe("mark and quota", () => {
     expect(service.canOpen("shopacct")).toMatchObject({ ok: false, reason: "unknown" });
   });
 
+  test("resetQuota ignores earlier follows for the limit but keeps the results", () => {
+    const { service, clock } = seeded();
+    service.updateSettings({ hourlyLimit: 2, dailyLimit: 10 });
+    service.assignNext();
+    service.mark("frank", "済");
+    service.mark("gina", "済");
+    expect(service.quota().blocked).toBe(true);
+
+    clock.advance(1000);
+    const reset = service.resetQuota();
+    expect(reset).toMatchObject({ blocked: false, followed1h: 0, followed24h: 0, remaining: 2 });
+
+    // 結果は残り、以後の済はまた数える
+    expect(lines(service.exportResults("2026-09-28"))).toHaveLength(3);
+    clock.advance(1000);
+    service.mark("kate", "済");
+    expect(service.quota().followed1h).toBe(1);
+    // リセット前に済にした行を取り消して再度済にしても数えない
+    service.mark("frank", "当日");
+    service.mark("frank", "済");
+    expect(service.quota().followed1h).toBe(1);
+  });
+
   test("quota recovers after an hour", () => {
     const { service, clock } = seeded();
     service.updateSettings({ hourlyLimit: 1 });

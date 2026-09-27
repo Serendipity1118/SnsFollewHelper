@@ -56,6 +56,7 @@
     const retry = q.blocked && q.retryAt ? `（${formatTime(q.retryAt)} 以降に再開）` : "";
     quotaLine.textContent = q.blocked ? `フォロー上限に達しました。${base}${retry}` : base;
     quotaLine.classList.toggle("blocked", q.blocked);
+    $("resetQuota").hidden = !q.blocked;
     $("open5").disabled = q.blocked || visible().length === 0;
   }
 
@@ -163,12 +164,26 @@
     }),
   );
 
+  // 新しいタブで開く。"noopener" 指定だと戻り値が常に null になりブロックを検知できないため、
+  // 開いた後に opener を切る。ブロックされたら false。
+  function openTab(handle) {
+    const win = window.open(openUrl(handle), "_blank");
+    if (!win) return false;
+    win.opener = null;
+    return true;
+  }
+
+  const POPUP_BLOCKED_MESSAGE =
+    "ブラウザのポップアップブロックで {blocked} 件が開けませんでした。" +
+    "アドレスバー右端のブロックアイコンから「http://127.0.0.1:8787 のポップアップを常に許可」を選び、もう一度押してください。";
+
   $("open5").addEventListener("click", () => {
     if (!canOpen()) return;
     const count = Math.min(OPEN_BATCH, state.quota.remaining);
-    visible()
+    const blocked = visible()
       .slice(0, count)
-      .forEach((item) => window.open(openUrl(item.handle), "_blank", "noopener"));
+      .filter((item) => !openTab(item.handle)).length;
+    showMessage(blocked ? POPUP_BLOCKED_MESSAGE.replace("{blocked}", String(blocked)) : "");
   });
 
   $("done5").addEventListener("click", (ev) =>
@@ -180,6 +195,19 @@
   );
 
   $("undo").addEventListener("click", () => undo());
+
+  $("resetQuota").addEventListener("click", (ev) => {
+    const ok = window.confirm(
+      "フォロー上限の集計をリセットします。\n" +
+        "Xの制限対策として設けている上限なので、短時間に続けてフォローするとアカウント制限のおそれがあります。\n" +
+        "済の結果は消えません。リセットしますか？",
+    );
+    if (!ok) return;
+    run(ev.currentTarget, async () => {
+      state.quota = await api("/api/quota/reset", { method: "POST" });
+      showMessage("フォロー上限の集計をリセットしました。");
+    });
+  });
 
   $("release").addEventListener("click", (ev) => {
     if (!window.confirm("今日の名簿で結果の付いていない件をすべて「未」に戻します。よいですか？")) return;
@@ -214,7 +242,7 @@
       state.active = vis[Math.max(pos - 1, 0)];
       render();
     } else if (key === "o") {
-      if (canOpen()) window.open(openUrl(handle), "_blank", "noopener");
+      if (canOpen() && !openTab(handle)) showMessage(POPUP_BLOCKED_MESSAGE.replace("{blocked}", "1"));
     } else if (key === "1") {
       mark(handle, "済");
     } else if (key === "2") {

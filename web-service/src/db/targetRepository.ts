@@ -9,6 +9,13 @@ export interface Target extends QueueItem {
 
 export type NewTarget = QueueItem & { assignedAt?: number | null };
 
+export interface TargetFilter {
+  kind: TargetKind;
+  status?: string;
+  prefecture?: string;
+  shop?: string;
+}
+
 const SELECT = `SELECT handle, kind, priority, prefecture, shop, cast_name AS castName,
   profile_url AS profileUrl, occurrences, last_updated AS lastUpdated, status,
   done_date AS doneDate, assigned_at AS assignedAt, updated_at AS updatedAt FROM targets`;
@@ -102,9 +109,13 @@ export function createTargetRepository(db: Db) {
         .all() as Array<{ kind: TargetKind; status: string; count: number }>;
     },
 
-    page(kind: TargetKind, status: string | undefined, offset: number, limit: number) {
-      const where = status ? "WHERE kind = @kind AND status = @status" : "WHERE kind = @kind";
-      const params = { kind, status, offset, limit };
+    page(filter: TargetFilter, offset: number, limit: number) {
+      const conds = ["kind = @kind"];
+      if (filter.status) conds.push("status = @status");
+      if (filter.prefecture) conds.push("prefecture = @prefecture");
+      if (filter.shop) conds.push("shop = @shop");
+      const where = `WHERE ${conds.join(" AND ")}`;
+      const params = { ...filter, offset, limit };
       const total = db.prepare(`SELECT COUNT(*) FROM targets ${where}`).pluck().get(params) as number;
       const items = db
         .prepare(`${SELECT} ${where} ORDER BY priority, handle LIMIT @limit OFFSET @offset`)

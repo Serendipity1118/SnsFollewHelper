@@ -4,9 +4,7 @@ import Database from "better-sqlite3";
 
 export type Db = Database.Database;
 
-const SCHEMA_VERSION = 1;
-
-const SCHEMA_V1 = `
+export const SCHEMA_V1 = `
 CREATE TABLE IF NOT EXISTS targets (
   handle       TEXT PRIMARY KEY,
   kind         TEXT NOT NULL CHECK (kind IN ('personal', 'shop')),
@@ -40,11 +38,43 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 `;
 
+// v2: pokepara_all_shops.csv の店舗一覧
+const SCHEMA_V2 = `
+CREATE TABLE IF NOT EXISTS shops (
+  shop_url     TEXT PRIMARY KEY,
+  prefecture   TEXT NOT NULL DEFAULT '',
+  name         TEXT NOT NULL,
+  kana         TEXT NOT NULL DEFAULT '',
+  area         TEXT NOT NULL DEFAULT '',
+  category     TEXT NOT NULL DEFAULT '',
+  address      TEXT NOT NULL DEFAULT '',
+  phone        TEXT NOT NULL DEFAULT '',
+  official_url TEXT NOT NULL DEFAULT '',
+  email        TEXT NOT NULL DEFAULT '',
+  instagram    TEXT NOT NULL DEFAULT '',
+  x_url        TEXT NOT NULL DEFAULT '',
+  tiktok       TEXT NOT NULL DEFAULT '',
+  line         TEXT NOT NULL DEFAULT '',
+  youtube      TEXT NOT NULL DEFAULT '',
+  updated_at   INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS shops_pref_name ON shops (prefecture, name);
+CREATE INDEX IF NOT EXISTS targets_shop ON targets (kind, prefecture, shop);
+`;
+
+/** 添字+1 がスキーマのバージョン。既存DBは不足分だけ順に適用する。 */
+const MIGRATIONS = [SCHEMA_V1, SCHEMA_V2] as const;
+
 function migrate(db: Db): void {
   const current = db.pragma("user_version", { simple: true }) as number;
-  if (current >= SCHEMA_VERSION) return;
-  db.exec(SCHEMA_V1);
-  db.pragma(`user_version = ${SCHEMA_VERSION}`);
+  MIGRATIONS.forEach((sql, i) => {
+    const version = i + 1;
+    if (current >= version) return;
+    db.transaction(() => {
+      db.exec(sql);
+      db.pragma(`user_version = ${version}`);
+    })();
+  });
 }
 
 /** SQLiteを開いてスキーマを最新にする。":memory:" はテスト用。 */

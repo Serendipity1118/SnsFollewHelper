@@ -195,14 +195,73 @@ describe("open redirect with quota", () => {
     expect(await res.text()).toContain("上限");
   });
 
+  test("resetting the limit reopens profiles", async () => {
+    const { request, json } = await seeded();
+    await json("/api/settings", "PUT", { hourlyLimit: 1 });
+    await json("/api/targets/frank/status", "PUT", { status: "済" });
+    expect((await request("/go/gina")).status).toBe(429);
+
+    const res = await request("/api/quota/reset", { method: "POST" });
+    const body = (await res.json()) as { ok: boolean; data: { blocked: boolean } };
+    expect(body).toMatchObject({ ok: true, data: { blocked: false } });
+    expect((await request("/go/gina")).status).toBe(302);
+  });
+
+  test("quota reset requires a same-origin request", async () => {
+    const { request } = await seeded();
+    const res = await request("/api/quota/reset", { method: "POST", headers: { origin: "https://evil.example" } });
+    expect(res.status).toBe(403);
+  });
+
   test("returns 404 for handles outside the queue", async () => {
     const { request } = await seeded();
     expect((await request("/go/nobody")).status).toBe(404);
   });
 });
 
+describe("shops", () => {
+  async function withShops() {
+    const ctx = await seeded();
+    await ctx.upload("/api/import/shops", fixture("shops.csv"));
+    return ctx;
+  }
+
+  test("imports the shop list", async () => {
+    const { upload } = setup();
+    const res = await upload("/api/import/shops", fixture("shops.csv"));
+    expect(await res.json()).toEqual({ ok: true, data: { imported: 4, skipped: 1, duplicates: 1 } });
+  });
+
+  test("lists shops with safe links and a link to the shop's queue", async () => {
+    const { request } = await withShops();
+    const html = await (await request("/shops")).text();
+    expect(html).toContain("ShopA");
+    expect(html).toContain('href="https://a.example"');
+    expect(html).not.toContain("javascript:alert(1)");
+    expect(html).toContain("/queue?kind=personal&amp;pref=tokyo&amp;shop=ShopF");
+  });
+
+  test("filters shops by prefecture and keyword", async () => {
+    const { request } = await withShops();
+    const osaka = await (await request("/shops?pref=osaka")).text();
+    expect(osaka).toContain("ShopB");
+    expect(osaka).not.toContain("ShopA");
+    const kana = await (await request(`/shops?q=${encodeURIComponent("ショップ")}`)).text();
+    expect(kana).toContain("ShopA");
+    expect(kana).not.toContain("ShopB");
+  });
+
+  test("queue page can be narrowed to one shop", async () => {
+    const { request } = await withShops();
+    const html = await (await request("/queue?kind=personal&pref=tokyo&shop=ShopF")).text();
+    expect(html).toContain("@frank");
+    expect(html).not.toContain("@alice_1");
+    expect(html).toContain("ShopF");
+  });
+});
+
 describe("pages", () => {
-  test.each(["/", "/queue", "/import", "/settings"])("%s renders HTML", async (path) => {
+  test.each(["/", "/queue", "/shops", "/import", "/settings"])("%s renders HTML", async (path) => {
     const { request } = await seeded();
     const res = await request(path);
     expect(res.status).toBe(200);

@@ -4,7 +4,8 @@ import { parseCsv, requireColumns } from "../csv/parse";
 import { createActionLogRepository } from "../db/actionLogRepository";
 import type { Db } from "../db/database";
 import { createSettingsRepository } from "../db/settingsRepository";
-import { createTargetRepository, type NewTarget, type Target } from "../db/targetRepository";
+import { createShopRepository, type ShopFilter } from "../db/shopRepository";
+import { createTargetRepository, type NewTarget, type Target, type TargetFilter } from "../db/targetRepository";
 import { buildQueue, type StatusEntry } from "../domain/buildQueue";
 import {
   QUEUE_COLUMNS,
@@ -18,6 +19,7 @@ import { localIsoDate, startOfLocalDay } from "../domain/dates";
 import { xProfileUrl } from "../domain/handle";
 import { queueItemFromCsv, queueItemToCsv } from "../domain/queueRows";
 import { DAY_MS, evaluateQuota, type Quota } from "../domain/safetyGuard";
+import { SHOP_REQUIRED_COLUMNS, shopFromCsv } from "../domain/shopRows";
 
 export type QueueErrorCode = "not_found" | "invalid";
 
@@ -44,11 +46,15 @@ export const DEFAULT_SETTINGS: Settings = { batchSize: 15, hourlyLimit: 15, dail
 export const MARKABLE_STATUSES: ReadonlySet<string> = new Set([...WRITABLE_STATUSES, STATUS_ASSIGNED]);
 
 type Counts = Record<TargetKind, Record<string, number>>;
+type PageQuery = { page: number; pageSize: number };
+
+const QUOTA_RESET_KEY = "quotaResetAt";
 
 export function createQueueService(db: Db, now: () => Date = () => new Date()) {
   const targets = createTargetRepository(db);
   const logs = createActionLogRepository(db);
   const settingsRepo = createSettingsRepository(db);
+  const shops = createShopRepository(db);
 
   const settings = (): Settings => {
     const stored = settingsRepo.all();
@@ -62,10 +68,17 @@ export function createQueueService(db: Db, now: () => Date = () => new Date()) {
     return parsed.success ? parsed.data : DEFAULT_SETTINGS;
   };
 
+  const quotaResetAt = (): number => {
+    const value = Number(settingsRepo.all()[QUOTA_RESET_KEY]);
+    return Number.isFinite(value) ? value : 0;
+  };
+
   const quota = (): Quota => {
     const at = now().getTime();
     const { hourlyLimit, dailyLimit } = settings();
-    return evaluateQuota(logs.followedSince(at - DAY_MS), { hourlyLimit, dailyLimit }, at);
+    // 制限リセット以前の済は数えない（結果の記録そのものは残す）
+    const since = Math.max(at - DAY_MS, quotaResetAt());
+    return evaluateQuota(logs.followedSince(since), { hourlyLimit, dailyLimit }, at);
   };
 
   const statusMap = (kind: TargetKind) =>
@@ -172,6 +185,12 @@ export function createQueueService(db: Db, now: () => Date = () => new Date()) {
       return today();
     },
 
+    /** フォロー上限の集計を今からやり直す。済の結果や履歴は消さない。 */
+    resetQuota(): Quota {
+      settingsRepo.setMany([[QUOTA_RESET_KEY, String(now().getTime())]]);
+      return quota();
+    },
+
     releaseAll(): number {
       return targets.releaseAssigned(now().getTime());
     },
@@ -215,10 +234,46 @@ export function createQueueService(db: Db, now: () => Date = () => new Date()) {
       return counts;
     },
 
-    list(query: { kind: TargetKind; status?: string; page: number; pageSize: number }) {
-      const page = Math.max(1, Math.floor(query.page));
-      const { total, items } = targets.page(query.kind, query.status, (page - 1) * query.pageSize, query.pageSize);
-      return { total, items, page, pageSize: query.pageSize };
+    list(query: TargetFilter & PageQuery) {
+      const { page: rawPage, pageSize, ...filter } = query;
+      const page = Math.max(1, Math.floor(rawPage));
+      const { total, items } = targets.page(filter, (page - 1) * pageSize, pageSize);
+      return { total, items, page, pageSize };
+    },
+
+    /** pokepara_all_shops.csv を取り込み、店舗一覧を入れ替える。店舗URLが空の行と重複は除く。 */
+    importShops(text: string) {
+      const rows = parseCsv(text);
+      requireColumns(rows, text, SHOP_REQUIRED_COLUMNS);
+      const seen = new Set<string>();
+      let skipped = 0;
+      let duplicates = 0;
+      const items = rows.flatMap((row) => {
+        const shop = shopFromCsv(row);
+        if (!shop) {
+          skipped += 1;
+          return [];
+        }
+        if (seen.has(shop.shopUrl)) {
+          duplicates += 1;
+          return [];
+        }
+        seen.add(shop.shopUrl);
+        return [shop];
+      });
+      shops.replaceAll(items, now().getTime());
+      return { imported: items.length, skipped, duplicates };
+    },
+
+    listShops(query: ShopFilter & PageQuery) {
+      const { page: rawPage, pageSize, ...filter } = query;
+      const page = Math.max(1, Math.floor(rawPage));
+      const { total, items } = shops.page(filter, (page - 1) * pageSize, pageSize);
+      return { total, items, page, pageSize };
+    },
+
+    shopPrefectures() {
+      return shops.prefectures();
     },
 
     exportQueue(kind: TargetKind): string {

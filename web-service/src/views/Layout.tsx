@@ -3,6 +3,7 @@ import type { Child } from "hono/jsx";
 const NAV = [
   { href: "/", key: "today", label: "当日キュー" },
   { href: "/queue", key: "queue", label: "キュー一覧" },
+  { href: "/shops", key: "shops", label: "店舗一覧" },
   { href: "/import", key: "import", label: "取込・出力" },
   { href: "/settings", key: "settings", label: "設定" },
 ] as const;

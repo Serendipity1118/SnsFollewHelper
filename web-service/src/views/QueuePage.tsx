@@ -1,10 +1,14 @@
 import type { Target } from "../db/targetRepository";
 import type { TargetKind } from "../domain/constants";
 import { Layout } from "./Layout";
+import { queueHref as buildQueueHref } from "./links";
 
 export interface QueuePageProps {
   kind: TargetKind;
   status?: string;
+  /** 店舗一覧から来たときの絞り込み（都道府県+店舗名） */
+  prefecture?: string;
+  shop?: string;
   counts: Record<TargetKind, Record<string, number>>;
   items: readonly Target[];
   total: number;
@@ -14,18 +18,21 @@ export interface QueuePageProps {
 
 const KIND_LABEL: Record<TargetKind, string> = { personal: "個人キュー", shop: "店舗垢候補" };
 
-function queueHref(kind: TargetKind, status: string | undefined, page: number, pageSize: number): string {
-  const params = new URLSearchParams({ kind, page: String(page), size: String(pageSize) });
-  if (status) params.set("status", status);
-  return `/queue?${params.toString()}`;
-}
-
-export function QueuePage({ kind, status, counts, items, total, page, pageSize }: QueuePageProps) {
+export function QueuePage({ kind, status, prefecture, shop, counts, items, total, page, pageSize }: QueuePageProps) {
   const lastPage = Math.max(1, Math.ceil(total / pageSize));
   const statuses = Object.entries(counts[kind]).sort(([a], [b]) => (a < b ? -1 : 1));
+  const queueHref = (k: TargetKind, s: string | undefined, p: number, size: number) =>
+    buildQueueHref({ kind: k, status: s, prefecture, shop, page: p, size });
   return (
     <Layout title="キュー一覧" active="queue">
       <h1>キュー一覧</h1>
+      {shop || prefecture ? (
+        <p class="filter-note">
+          絞り込み中: {[prefecture, shop].filter(Boolean).join(" / ")}{" "}
+          <a href={buildQueueHref({ kind, status, size: pageSize })}>解除</a>
+          （状態ごとの件数は全体の件数）
+        </p>
+      ) : null}
       <div class="filters">
         {(Object.keys(KIND_LABEL) as TargetKind[]).map((k) => (
           <a href={queueHref(k, undefined, 1, pageSize)} class={k === kind ? "chip current" : "chip"}>

@@ -51,6 +51,7 @@ export function apiRoutes(service: QueueService): Hono {
   api.post("/today/next", (c) => c.json(ok(service.assignNext())));
   api.post("/today/release", (c) => c.json(ok({ released: service.releaseAll() })));
   api.get("/quota", (c) => c.json(ok(service.quota())));
+  api.post("/quota/reset", (c) => c.json(ok(service.resetQuota())));
 
   api.put("/targets/:handle/status", async (c) => {
     const body = markSchema.safeParse(await readJson(c));
@@ -82,6 +83,10 @@ export function apiRoutes(service: QueueService): Hono {
     const kind = kindSchema.safeParse(fields["kind"] ?? "personal");
     if (!kind.success) throw new BadRequest("kind は personal か shop を指定してください");
     return c.json(ok(service.importQueue(text, kind.data)));
+  });
+  api.post("/import/shops", async (c) => {
+    const { text } = await readUpload(c);
+    return c.json(ok(service.importShops(text)));
   });
   api.post("/import/results", async (c) => {
     const { text } = await readUpload(c);

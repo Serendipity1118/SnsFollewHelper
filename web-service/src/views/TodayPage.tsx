@@ -46,7 +46,12 @@ export function TodayPage() {
         </button>
         <span class="count" id="progress"></span>
       </div>
-      <p id="quota" class="quota" role="status"></p>
+      <div class="quota-row">
+        <p id="quota" class="quota" role="status"></p>
+        <button type="button" id="resetQuota" class="danger" hidden>
+          制限をリセットする
+        </button>
+      </div>
       <p id="message" class="message" role="alert"></p>
       <main id="list"></main>
     </Layout>

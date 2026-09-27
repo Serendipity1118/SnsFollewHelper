@@ -9,13 +9,16 @@ export function createActionLogRepository(db: Db) {
       ).run(handle, statusBefore, statusAfter, occurredAt);
     },
 
-    /** since 以降に新しく「済」にした時刻。同じ handle は最初の1回だけ数える（取り消し→再度済で二重に数えない）。 */
+    /**
+     * since より後に「初めて」済にした時刻（handle ごと）。
+     * 取り消し→再度済や、制限リセット前に済にした行を後で済にし直しても二重に数えない。
+     */
     followedSince(since: number): number[] {
       return db
         .prepare(
-          `SELECT MIN(occurred_at) FROM action_logs
-           WHERE status_after = ? AND status_before <> ? AND occurred_at > ?
-           GROUP BY handle`,
+          `SELECT MIN(occurred_at) AS first_done FROM action_logs
+           WHERE status_after = ? AND status_before <> ?
+           GROUP BY handle HAVING first_done > ?`,
         )
         .pluck()
         .all(STATUS_DONE, STATUS_DONE, since) as number[];

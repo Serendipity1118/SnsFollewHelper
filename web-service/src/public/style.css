@@ -87,6 +87,9 @@ button.subtle { color: var(--muted); }
 .count { font-variant-numeric: tabular-nums; color: var(--muted); }
 .quota { margin: 4px 0; font-size: 0.95rem; }
 .quota.blocked { color: #fca5a5; font-weight: 600; }
+.quota-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+button.danger { border-color: #f87171; color: #fecaca; min-height: 36px; }
+[hidden] { display: none !important; }
 .message { margin: 4px 0; color: #fbbf24; min-height: 1.2em; }
 .row {
   background: var(--card);
@@ -121,3 +124,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .result { white-space: pre-wrap; margin: 10px 0 0; font-size: 0.85rem; color: var(--muted); }
 .result.error { color: #fca5a5; }
 .links li { margin: 6px 0; }
+.search { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.search select, .search input { min-height: 40px; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 0 10px; }
+.search input[type="search"] { flex: 1 1 220px; }
+.links-cell a { display: inline-block; margin: 0 8px 4px 0; }
+.filter-note { background: var(--card); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 12px; }

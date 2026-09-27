@@ -7,18 +7,33 @@ import { ImportPage } from "../views/ImportPage";
 import { MessagePage } from "../views/MessagePage";
 import { QueuePage } from "../views/QueuePage";
 import { SettingsPage } from "../views/SettingsPage";
+import { ShopsPage } from "../views/ShopsPage";
 import { TodayPage } from "../views/TodayPage";
 import { STATIC_ASSETS } from "./static";
 
 const DEFAULT_PAGE_SIZE = 100;
 const MAX_PAGE_SIZE = 500;
 
-const queueQuerySchema = z.object({
-  kind: z.enum(["personal", "shop"]).catch("personal"),
-  status: z.string().optional().catch(undefined),
+const optionalText = z
+  .string()
+  .max(200)
+  .optional()
+  .catch(undefined)
+  .transform((v) => v?.trim() || undefined);
+const pagingSchema = {
   page: z.coerce.number().int().min(1).catch(1),
   size: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).catch(DEFAULT_PAGE_SIZE),
+};
+
+const queueQuerySchema = z.object({
+  kind: z.enum(["personal", "shop"]).catch("personal"),
+  status: optionalText,
+  pref: optionalText,
+  shop: optionalText,
+  ...pagingSchema,
 });
+
+const shopsQuerySchema = z.object({ pref: optionalText, q: optionalText, ...pagingSchema });
 
 function render(c: Context, node: unknown, status: ContentfulStatusCode = 200) {
   return c.html(`<!DOCTYPE html>${String(node)}`, status);
@@ -36,9 +51,18 @@ export function pageRoutes(service: QueueService): Hono {
   pages.get("/queue", (c) => {
     const q = queueQuerySchema.parse(c.req.query());
     const kind: TargetKind = q.kind;
-    const status = q.status || undefined;
-    const result = service.list({ kind, status, page: q.page, pageSize: q.size });
-    return render(c, <QueuePage kind={kind} status={status} counts={service.counts()} {...result} />);
+    const filter = { kind, status: q.status, prefecture: q.pref, shop: q.shop };
+    const result = service.list({ ...filter, page: q.page, pageSize: q.size });
+    return render(c, <QueuePage {...filter} counts={service.counts()} {...result} />);
+  });
+
+  pages.get("/shops", (c) => {
+    const q = shopsQuerySchema.parse(c.req.query());
+    const result = service.listShops({ prefecture: q.pref, q: q.q, page: q.page, pageSize: q.size });
+    return render(
+      c,
+      <ShopsPage prefecture={q.pref} q={q.q} prefectures={service.shopPrefectures()} {...result} />,
+    );
   });
 
   pages.get("/import", (c) => render(c, <ImportPage />));

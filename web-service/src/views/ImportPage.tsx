@@ -40,6 +40,11 @@ export function ImportPage() {
         title="旧 today.html の結果CSVを反映する"
         description="follow_results_*.csv（handle, 状態, 実施日）。済・スキップ・死垢だけを書き込む。"
       />
+      <UploadForm
+        action="/api/import/shops"
+        title="店舗一覧を取り込む"
+        description="pokepara_all_shops.csv（店舗名・店舗URL 列が必要）。店舗一覧の中身を入れ替える。キューには影響しない。"
+      />
       <section class="card">
         <h2>CSVで書き出す</h2>
         <p class="meta">旧ツールと同じ列・UTF-8(BOM)・CRLF。</p>

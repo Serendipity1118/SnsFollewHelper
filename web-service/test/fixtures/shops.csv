@@ -1,0 +1,7 @@
+﻿都道府県,店舗名,カナ,エリア,業種,住所,電話番号,店舗URL,公式サイト,メール,Instagram,X(Twitter),TikTok,LINE,YouTube
+tokyo,ShopA,ショップエー,新宿,キャバクラ,"東京都新宿区1-1, 2F",03-0000-0000,https://shop.example/a,https://a.example,,https://www.instagram.com/shopa,https://x.com/shopa,,,
+tokyo,ShopF,,銀座,クラブ,,,https://shop.example/f,javascript:alert(1),,,,,,
+osaka,ShopB,,北新地,ラウンジ,,,https://shop.example/b,,,,,,,
+osaka,NoUrl,,,,,,,,,,,,,
+osaka,ShopB,,北新地,ラウンジ,,,https://shop.example/b,,,,,,,
+tokyo,ShopS,,池袋,キャバクラ,,,https://shop.example/s,,,,https://x.com/shopacct,,,
