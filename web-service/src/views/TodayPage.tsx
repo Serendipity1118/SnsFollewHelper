@@ -32,9 +32,6 @@ export function TodayPage() {
           <button type="button" class="btn" id="open5">
             まとめて開く
           </button>
-          <button type="button" class="btn" id="doneOpened">
-            開いた分をフォローしたにする
-          </button>
           <details class="menu">
             <summary class="btn btn-ghost">その他</summary>
             <div class="menu-body">

@@ -21,11 +21,14 @@ export const STATUS_DONE = "済";
 export const STATUS_SKIP = "スキップ";
 export const STATUS_DEAD = "死垢";
 export const STATUS_SHOP = "店舗垢候補";
+/** 開いた時点ですでにフォローしていた（Chrome拡張が記録）。フォロー上限には数えない。 */
+export const STATUS_ALREADY = "既フォロー";
 
 export const WRITABLE_STATUSES: ReadonlySet<string> = new Set([
   STATUS_DONE,
   STATUS_SKIP,
   STATUS_DEAD,
+  STATUS_ALREADY,
 ]);
 
 export type TargetKind = "personal" | "shop";

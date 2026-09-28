@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "フォロー補助（Xフォロー優先キュー）",
+  "version": "0.1.0",
+  "description": "存在しない・フォロー済みのXプロフィールタブを閉じ、結果をローカルのWebサービスへ知らせます。フォローボタンは押しません。",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAijJOIJo2vKB+bvxpBZ0/ExlNihH9dxK+3fwXlZcpysEcBjZSz0NGIkVkc51jLKzDHqQlinfO4dBjRy9mr6kPc6H751iy3lX337R04iCWxoNanp02sujbo3DGRQMyK6PaCYP0LkHd4HB2OmRqsipg/OI3QgNB+Tho876vWlpBSgZgzdRx7y3RtlUGbVKXeeBhIFv1lnI7jny3rZxKeTtxudDoLaxIiM0K5LoTC4radJXOe6DoRvF0h7+KJUVTdvKMeVpjfDKDMaruYrmP/j17/zHCYCiDLJozfJ2l9uY5ph5o2JM0F9uOdjN6BfzLW9Lz7CsVMfNFq5VhjHSAm/arCQIDAQAB",
+  "permissions": ["storage"],
+  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
+  "background": { "service_worker": "src/background.js" },
+  "action": { "default_title": "フォロー補助（クリックで ON/OFF）" },
+  "options_page": "src/options.html",
+  "content_scripts": [
+    {
+      "matches": ["https://x.com/*", "https://twitter.com/*"],
+      "js": ["src/settings.js", "src/profileUrl.js", "src/detect.js", "src/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

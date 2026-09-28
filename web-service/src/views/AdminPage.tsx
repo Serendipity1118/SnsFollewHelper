@@ -143,7 +143,7 @@ export function AdminPage(props: AdminPageProps) {
         <UploadForm
           action="/api/import/results"
           title="today.html の結果CSV"
-          description="follow_results_*.csv（handle, 状態, 実施日）。済・スキップ・死垢だけを書き込みます。"
+          description="follow_results_*.csv（handle, 状態, 実施日）。済・既フォロー・スキップ・死垢だけを書き込みます。"
         />
       </details>
     </Layout>

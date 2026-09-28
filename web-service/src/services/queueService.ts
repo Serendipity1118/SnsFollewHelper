@@ -11,6 +11,7 @@ import {
   FOLLOW_CAP,
   QUEUE_COLUMNS,
   RESULT_COLUMNS,
+  STATUS_ALREADY,
   STATUS_ASSIGNED,
   STATUS_DONE,
   STATUS_PENDING,
@@ -248,7 +249,9 @@ export function createQueueService(db: Db, now: () => Date = () => new Date()) {
       if (!MARKABLE_STATUSES.has(status)) throw new QueueError(`状態 ${status} は指定できません`, "invalid");
       const current = findPersonal(handle);
       if (!current) throw new QueueError(`handle ${handle} は個人キューにありません`, "not_found");
-      if (current.status !== status) {
+      // 「済」の人を後から開くと拡張は「既フォロー」と判定する。フォローした記録を消さないよう「済」のまま残す。
+      const keepsDone = status === STATUS_ALREADY && current.status === STATUS_DONE;
+      if (current.status !== status && !keepsDone) {
         const at = now();
         const isUndo = status === STATUS_ASSIGNED;
         // 取り消しは今日の名簿に戻す（前日の割当時刻のままだと即座に「未」へ解放されてしまう）

@@ -119,10 +119,33 @@ test("まとめて開く: ポップアップが許可されていれば5タブ�
   await page.locator("#open5").click();
   await expect.poll(() => opened.length).toBe(5);
   await expect(page.locator("#message")).toBeHidden();
-  // 開いた5件に印が付き、まとめてフォローしたにできる
+  // 開いた5件に印が付く。結果はChrome拡張か行ごとのボタンで付けるので、まとめて「済」にするボタンは無い
   await expect(page.locator(".badge-opened")).toHaveCount(5);
-  await page.getByRole("button", { name: "開いた 5 件をフォローしたにする" }).click();
-  await expect(page.locator("#progress")).toHaveText("残り 6 件 / 11 件");
+  await expect(page.getByRole("button", { name: /フォローしたにする/ })).toHaveCount(0);
+  await expect(page.locator("#progress")).toHaveText("残り 11 件 / 11 件");
+});
+
+test("まとめて開く: 全員開いた後も、未処理なら開いた順の古い人から開き直せる", async ({ page, context }) => {
+  await context.route("https://x.com/**", (route) => route.fulfill({ status: 200, body: "stub" }));
+  await importAndAssign(page);
+  // 開いたタブの行き先（/go/<handle>）を開いた順に集める
+  const opened: string[] = [];
+  context.on("request", (req) => {
+    const path = new URL(req.url()).pathname;
+    if (path.startsWith("/go/")) opened.push(path);
+  });
+  await page.locator("#open5").click(); // 1〜5人目
+  await page.locator("#open5").click(); // 6〜10人目
+  await expect(page.locator("#open5")).toHaveText("まとめて開く（5件）"); // 11人目 + 開き直し4件
+  await page.locator("#open5").click();
+  await expect.poll(() => opened.length).toBe(15);
+  // 11人全員が開いた状態でも押せる（拡張がタブを閉じた未処理の人を開き直すため）
+  await expect(page.locator("#open5")).toBeEnabled();
+  await expect(page.locator("#open5")).toHaveText("まとめて開き直す（5件）");
+  await page.locator("#open5").click();
+  await expect.poll(() => opened.length).toBe(20);
+  // 3回目に開き直した4件（1〜4人目）より前に開いた 5〜9人目 から開き直す
+  expect(opened.slice(15)).toEqual(opened.slice(4, 9));
 });
 
 test("まとめて開く: ポップアップがブロックされたら許可手順を表示する", async ({ page }) => {

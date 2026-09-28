@@ -14,3 +14,9 @@
 
 - Flutterアプリとは分離して管理する（ユーザー指定 2026-09-28）。`follow_support_app/` 側のコードに依存・変更しない。
 - Node.js + Hono + SQLite。手順は `web-service/README.md`。Xの自動操作は実装しない。
+
+## Chrome拡張（`chrome-extension/`）
+
+- ユーザー指定（2026-09-28）: **フォローボタンは絶対に自動で押さない。** `.click()`・`dispatchEvent` などでXの画面を操作するコードを書かない（`test/content.test.js` で検査している）。
+- 許可しているのは「開いているXプロフィールの表示の読み取り」「タブを閉じる」「Webサービスへの結果の通知」だけ。
+- Xの画面構造に依存する判定は `chrome-extension/src/detect.js` に集める。手順は `chrome-extension/README.md`。

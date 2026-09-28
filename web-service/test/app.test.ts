@@ -4,10 +4,11 @@ import { createTestService, fixture } from "./support";
 
 const HOST = "127.0.0.1:8787";
 const ORIGIN = `http://${HOST}`;
+const EXTENSION_ORIGIN = "chrome-extension://liiicjpegnmagfdlnmbnebdfkdkjjlpl";
 
 function setup() {
   const ctx = createTestService();
-  const app = createApp({ service: ctx.service, allowedHosts: [HOST] });
+  const app = createApp({ service: ctx.service, allowedHosts: [HOST], extensionOrigins: [EXTENSION_ORIGIN] });
   const request = (path: string, init: RequestInit = {}) => {
     const headers = new Headers(init.headers);
     if (!headers.has("host")) headers.set("host", HOST);
@@ -48,6 +49,27 @@ describe("local-only guards", () => {
   test("rejects state-changing requests without Origin or Sec-Fetch-Site", async () => {
     const { app } = setup();
     const res = await app.request(`http://${HOST}/api/today/next`, { method: "POST", headers: { host: HOST } });
+    expect(res.status).toBe(403);
+  });
+
+  test("accepts result reports from the follow-helper extension", async () => {
+    const { request, upload } = setup();
+    await upload("/api/import/casts", fixture("casts.csv"));
+    await request("/api/today/next", { method: "POST" });
+    const res = await request("/api/targets/frank/status", {
+      method: "PUT",
+      body: JSON.stringify({ status: "済" }),
+      headers: { origin: EXTENSION_ORIGIN, "content-type": "application/json" },
+    });
+    expect(res.status).toBe(200);
+  });
+
+  test("rejects other extensions", async () => {
+    const { request } = setup();
+    const res = await request("/api/today/next", {
+      method: "POST",
+      headers: { origin: "chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+    });
     expect(res.status).toBe(403);
   });
 
@@ -124,6 +146,29 @@ describe("today API", () => {
 
     const quota = (await (await request("/api/quota")).json()) as { data: { remaining: number } };
     expect(quota.data.remaining).toBe(14);
+  });
+
+  test("records 既フォロー without using the follow quota", async () => {
+    const { request, json } = await seeded();
+    await request("/api/today/next", { method: "POST" });
+    const marked = await json("/api/targets/frank/status", "PUT", { status: "既フォロー" });
+    expect(marked.status).toBe(200);
+    const body = (await marked.json()) as { data: { item: { status: string }; quota: { followed1h: number; remaining: number } } };
+    expect(body.data.item.status).toBe("既フォロー");
+    expect(body.data.quota).toMatchObject({ followed1h: 0, remaining: 15 });
+    const today = (await (await request("/api/today")).json()) as { data: { summary: { followed: number } } };
+    expect(today.data.summary.followed).toBe(0);
+  });
+
+  test("keeps 済 when the extension later reports 既フォロー for the same person", async () => {
+    const { request, json } = await seeded();
+    await request("/api/today/next", { method: "POST" });
+    await json("/api/targets/frank/status", "PUT", { status: "済" });
+    const res = await json("/api/targets/frank/status", "PUT", { status: "既フォロー" });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { item: { status: string }; quota: { followed1h: number } } };
+    expect(body.data.item.status).toBe("済");
+    expect(body.data.quota.followed1h).toBe(1);
   });
 
   test("validates mark requests", async () => {

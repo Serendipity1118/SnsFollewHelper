@@ -14,7 +14,7 @@ export interface TargetListProps {
 }
 
 // 状態チップの並び（作業の流れ順）。ここにない状態は後ろに付ける。
-const STATUS_ORDER = ["未", "当日", "済", "スキップ", "死垢", "店舗垢候補"];
+const STATUS_ORDER = ["未", "当日", "済", "既フォロー", "スキップ", "死垢", "店舗垢候補"];
 
 const statusClass = (status: string) =>
   ({ 済: "badge-follow", 死垢: "badge-dead", 当日: "badge-today" })[status] ?? "";

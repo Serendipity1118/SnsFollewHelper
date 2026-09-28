@@ -1,5 +1,6 @@
 // 今日のフォロー画面。結果は押した時点でサーバーへ保存する。
 // Xへの通信・自動操作はしない。プロフィールは /go/:handle 経由で人が開く。
+// Chrome拡張（chrome-extension/）が記録した結果は、定期的な再取得で一覧に反映する。
 (() => {
   "use strict";
 
@@ -10,10 +11,11 @@
     { status: "スキップ", label: "見送る", className: "" },
     { status: "死垢", label: "死垢", className: "btn-dead" },
   ];
-  const RESULT_BADGE = { 済: "フォローした", スキップ: "見送り", 死垢: "死垢" };
+  const RESULT_BADGE = { 済: "フォローした", 既フォロー: "フォロー済みだった", スキップ: "見送り", 死垢: "死垢" };
   const TOAST_TEXT = { 済: "をフォロー済みにしました", スキップ: "を見送りました", 死垢: "を死垢にしました" };
   const OPEN_BATCH = 5;
   const TOAST_MS = 6000;
+  const REFRESH_MS = 10_000;
   const POPUP_BLOCKED_MESSAGE =
     "ポップアップブロックで {blocked} 件が開けませんでした。" +
     "アドレスバー右端のブロックアイコンから「http://127.0.0.1:8787 のポップアップを常に許可」を選び、もう一度押してください。";
@@ -32,6 +34,8 @@
     showDone: false,
   };
   const pending = new Set();
+  // 保存を始めるたびに進める。再取得の途中で保存が走ったら、その再取得の結果（古い名簿）は捨てる。
+  let markSeq = 0;
   let toastTimer = null;
 
   // ---- 共通 ----
@@ -85,8 +89,9 @@
     }
   }
 
+  // 開いた順に並べる（開き直した人は末尾へ）。まとめて開き直すときに古い順に選ぶため。
   function rememberOpened(handle) {
-    state.opened = new Set([...state.opened, handle]);
+    state.opened = new Set([...[...state.opened].filter((h) => h !== handle), handle]);
     try {
       localStorage.setItem(openedKey(), JSON.stringify([...state.opened]));
     } catch {
@@ -101,6 +106,22 @@
     win.opener = null;
     rememberOpened(handle);
     return true;
+  }
+
+  /**
+   * まとめて開く対象。未処理のうち、まだ開いていない人（名簿順）を優先し、
+   * 足りなければ開いた順の古い人から開き直す（Chrome拡張がタブを閉じた未処理の人、手で閉じた人を開き直すため）。
+   */
+  function batchTargets() {
+    const left = unprocessed();
+    const fresh = left.filter((item) => !state.opened.has(item.handle));
+    const order = [...state.opened];
+    const reopen = left
+      .filter((item) => state.opened.has(item.handle))
+      .sort((a, b) => order.indexOf(a.handle) - order.indexOf(b.handle));
+    const limit = canOpen() ? Math.min(OPEN_BATCH, state.quota.remaining) : 0;
+    const targets = [...fresh, ...reopen].slice(0, limit);
+    return { targets, reopenOnly: fresh.length === 0 };
   }
 
   // ---- 指標 ----
@@ -198,7 +219,7 @@
   }
 
   function renderDoneRow(item, index) {
-    const badgeClass = item.status === DONE ? "badge-follow" : item.status === "死垢" ? "badge-dead" : "";
+    const badgeClass = item.status === DONE || item.status === "既フォロー" ? "badge-follow" : item.status === "死垢" ? "badge-dead" : "";
     return el("article", { class: "row done", dataset: { handle: item.handle } }, [
       el("div", { class: "row-title" }, [
         el("span", { class: "row-num", text: String(index + 1) }),
@@ -265,13 +286,10 @@
     $("date").textContent = state.date ? `（${state.date}）` : "";
     $("progress").textContent = total ? `残り ${left.length} 件 / ${total} 件` : "";
     $("bulk").hidden = left.length === 0;
-    const toOpen = left.filter((item) => !state.opened.has(item.handle));
-    const openCount = canOpen() ? Math.min(OPEN_BATCH, state.quota.remaining, toOpen.length) : 0;
-    $("open5").textContent = openCount ? `まとめて開く（${openCount}件）` : "まとめて開く";
-    $("open5").disabled = openCount === 0;
-    const openedLeft = left.filter((item) => state.opened.has(item.handle)).length;
-    $("doneOpened").textContent = openedLeft ? `開いた ${openedLeft} 件をフォローしたにする` : "開いた分をフォローしたにする";
-    $("doneOpened").disabled = openedLeft === 0;
+    const { targets, reopenOnly } = batchTargets();
+    const verb = reopenOnly ? "まとめて開き直す" : "まとめて開く";
+    $("open5").textContent = targets.length ? `${verb}（${targets.length}件）` : "まとめて開く";
+    $("open5").disabled = targets.length === 0;
   }
 
   function render() {
@@ -316,6 +334,7 @@
     // 保存中の行への連打・キーリピートで二重送信しない
     if (pending.has(handle)) return;
     pending.add(handle);
+    markSeq += 1;
     const order = unprocessed().map((item) => item.handle);
     const pos = order.indexOf(handle);
     const before = state.items.find((item) => item.handle === handle);
@@ -365,10 +384,8 @@
   }
 
   function openBatch() {
-    if (!canOpen()) return;
-    const targets = unprocessed().filter((item) => !state.opened.has(item.handle));
-    const count = Math.min(OPEN_BATCH, state.quota.remaining, targets.length);
-    const blocked = targets.slice(0, count).filter((item) => !openTab(item.handle)).length;
+    const { targets } = batchTargets();
+    const blocked = targets.filter((item) => !openTab(item.handle)).length;
     showMessage(blocked ? POPUP_BLOCKED_MESSAGE.replace("{blocked}", String(blocked)) : "");
     render();
   }
@@ -411,13 +428,6 @@
   });
 
   $("open5").addEventListener("click", openBatch);
-
-  $("doneOpened").addEventListener("click", (ev) =>
-    run(ev.currentTarget, async () => {
-      const targets = unprocessed().filter((item) => state.opened.has(item.handle));
-      for (const item of targets) await mark(item.handle, DONE);
-    }),
-  );
 
   $("toastUndo").addEventListener("click", () => undo());
 
@@ -468,6 +478,25 @@
       mark(handle, RESULTS[Number(key) - 1].status);
     }
   });
+
+  // 拡張がタブを閉じて記録した結果を拾う。保存中は上書きしないよう見送る。
+  async function refresh() {
+    if (document.hidden || pending.size) return;
+    const seq = markSeq;
+    let data;
+    try {
+      data = await api("/api/today");
+    } catch {
+      return; // 一時的な失敗は次回の再取得に任せる
+    }
+    if (pending.size || seq !== markSeq) return;
+    applyToday(data);
+    render();
+  }
+
+  document.addEventListener("visibilitychange", refresh);
+  window.addEventListener("focus", refresh);
+  setInterval(refresh, REFRESH_MS);
 
   load().catch((error) => showMessage(`読み込めませんでした: ${error.message}`));
 })();

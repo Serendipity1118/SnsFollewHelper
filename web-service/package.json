@@ -8,7 +8,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch --include \"src/public/**\" src/server.ts",
     "start": "tsx src/server.ts",
     "lint": "tsc --noEmit",
     "test": "vitest run",

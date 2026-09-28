@@ -1,0 +1,16 @@
+{
+  "name": "follow-helper-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Xフォロー優先キュー用のChrome拡張。画面を読み取ってタブを閉じ、結果をWebサービスへ知らせる。フォローボタンは押さない。",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^5.0.2",
+    "jsdom": "^27.0.0",
+    "vitest": "^5.0.2"
+  }
+}

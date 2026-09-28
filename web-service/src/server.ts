@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { createApp } from "./app";
 import { resolveDbPath } from "./config/dbPath";
+import { extensionOrigin } from "./config/extension";
 import { openDatabase } from "./db/database";
 import { createQueueService } from "./services/queueService";
 
@@ -24,6 +25,7 @@ const db = openDatabase(dbPath);
 const app = createApp({
   service: createQueueService(db),
   allowedHosts: [`${HOSTNAME}:${port}`, `localhost:${port}`],
+  extensionOrigins: [extensionOrigin(process.env.EXTENSION_ID)],
 });
 
 const server = serve({ fetch: app.fetch, port, hostname: HOSTNAME }, (info) => {

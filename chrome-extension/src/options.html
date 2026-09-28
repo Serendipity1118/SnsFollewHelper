@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>フォロー補助の設定</title>
+    <style>
+      body { font: 14px/1.6 system-ui, sans-serif; max-width: 520px; margin: 24px auto; padding: 0 16px; color: #0f1419; }
+      label { display: block; margin: 16px 0 4px; font-weight: 600; }
+      input { width: 100%; padding: 6px 8px; font: inherit; box-sizing: border-box; }
+      input[type="checkbox"] { width: auto; }
+      .hint { color: #536471; font-size: 12px; margin: 4px 0 0; }
+      button { margin-top: 20px; padding: 8px 16px; font: inherit; }
+      #saved { margin-left: 8px; color: #00813a; }
+    </style>
+  </head>
+  <body>
+    <h1>フォロー補助の設定</h1>
+    <p class="hint">この拡張はフォローボタンを押しません。フォローは必ずご自身で押してください。</p>
+    <form id="form">
+      <label for="enabled"><input type="checkbox" id="enabled" /> 自動でタブを閉じる（ON/OFF）</label>
+      <label for="delay">フォローしてからタブを閉じるまでの秒数</label>
+      <input id="delay" type="number" min="0" max="10" step="0.5" />
+      <p class="hint">0〜10秒。初期値は 1.5 秒です。</p>
+      <label for="server">WebサービスのURL</label>
+      <input id="server" type="url" placeholder="http://127.0.0.1:8787" />
+      <p class="hint">http://127.0.0.1 または http://localhost のみ指定できます。</p>
+      <button type="submit">保存</button><span id="saved" hidden>保存しました</span>
+    </form>
+    <script src="settings.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

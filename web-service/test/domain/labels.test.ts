@@ -22,6 +22,7 @@ describe("statusLabel", () => {
     expect(statusLabel("スキップ")).toBe("見送り");
     expect(statusLabel("当日")).toBe("今日の名簿");
     expect(statusLabel("未")).toBe("未着手");
+    expect(statusLabel("既フォロー")).toBe("フォロー済みだった");
   });
 
   test("keeps unknown statuses as they are", () => {

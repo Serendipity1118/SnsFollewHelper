@@ -61,7 +61,7 @@ export function createTargetRepository(db: Db) {
       insertAll(items, now);
     }),
 
-    /** 結果（済/スキップ/死垢）を書き込む。個人キューのみが対象。 */
+    /** 結果（済/既フォロー/スキップ/死垢）を書き込む。個人キューのみが対象。 */
     applyResult(handle: string, status: string, doneDate: string, now: number): boolean {
       const info = db
         .prepare(
@@ -152,7 +152,7 @@ export function createTargetRepository(db: Db) {
       return value ?? undefined;
     },
 
-    /** 済/スキップ/死垢 の個人キュー。実施日の新しい順。 */
+    /** 済/既フォロー/スキップ/死垢 の個人キュー。実施日の新しい順。 */
     finished(doneDate?: string): Target[] {
       const dateCond = doneDate ? " AND done_date = ?" : "";
       const params = doneDate ? [...WRITABLE, doneDate] : WRITABLE;

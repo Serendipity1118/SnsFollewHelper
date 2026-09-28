@@ -6,11 +6,11 @@ const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 /**
  * ローカル専用の防御。
  * - Host が許可リスト外なら拒否（DNSリバインディング対策）
- * - 更新系は同一オリジンからのみ受け付ける（CSRF対策）
+ * - 更新系は同一オリジンと、許可したChrome拡張（chrome-extension://<ID>）からのみ受け付ける（CSRF対策）
  */
-export function localOnly(allowedHosts: readonly string[]): MiddlewareHandler {
+export function localOnly(allowedHosts: readonly string[], extensionOrigins: readonly string[] = []): MiddlewareHandler {
   const hosts = new Set(allowedHosts.map((h) => h.toLowerCase()));
-  const origins = new Set([...hosts].map((h) => `http://${h}`));
+  const origins = new Set([...[...hosts].map((h) => `http://${h}`), ...extensionOrigins.map((o) => o.toLowerCase())]);
   return async (c, next) => {
     const host = (c.req.header("host") ?? "").toLowerCase();
     if (!hosts.has(host)) {
