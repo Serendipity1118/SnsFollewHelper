@@ -22,6 +22,10 @@ npm run dev      # http://127.0.0.1:8787 （ファイル変更で自動再起動
 npm start        # 通常起動
 ```
 
+`npm install` が `better-sqlite3` の `node-gyp rebuild`（`gyp ERR! find VS`）で失敗する場合は、
+`npm install --ignore-scripts` で入れる。`better-sqlite3` はWindows用のビルド済みバイナリ（`prebuilds/win32-x64.node`）を同梱しているが、
+`binding.gyp` があるため npm が自動でソースからのビルドを試み、Visual Studio（C++ビルドツール）がない環境では失敗する。
+
 環境変数: `PORT`（既定 8787）、`DB_PATH`、`EXTENSION_ID`（結果の書き込みを許可するChrome拡張のID。既定は `chrome-extension/manifest.json` の key から決まる `liiicjpegnmagfdlnmbnebdfkdkjjlpl`）。
 
 DBの場所（起動ログの `DB:` に表示）:
