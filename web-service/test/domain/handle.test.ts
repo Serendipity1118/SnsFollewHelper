@@ -14,6 +14,30 @@ describe("normalizeHandle", () => {
     expect(normalizeHandle(url)).toBe(expected);
   });
 
+  // 2026-09-28 に名簿で見つかった崩れた値（空白・全角＠・全角＿が URL エンコードされて混ざる）
+  test.each([
+    ["https://x.com/%20high_puri_mikii", "high_puri_mikii"],
+    ["https://x.com/kimikite_kohaku%20", "kimikite_kohaku"],
+    ["https://x.com/ookami%20_miku3", "ookami_miku3"],
+    ["https://x.com/%20@barkuramo9966", "barkuramo9966"],
+    ["https://x.com/%EF%BC%A0lovberry_ice", "lovberry_ice"],
+    ["https://x.com/mero%EF%BC%BFhozuki", "mero_hozuki"],
+    ["https://x.com/＠aruno_labi", "aruno_labi"],
+    ["https://x.com/ yuyu_nachi", "yuyu_nachi"],
+  ])("cleans up spaces and full-width characters in %s", (url, expected) => {
+    expect(normalizeHandle(url)).toBe(expected);
+  });
+
+  test.each([
+    ["https://x.com/mole102%E2%80%A6"],
+    ["https://x.com/%E3%81%BF%E3%81%95@cafe&bar19"],
+    ["https://x.com/%E3%81%AA%E3%81%97"],
+    ["https://x.com/haruhi_swerrabbi"],
+    ["https://x.com/%E0%A4%A"],
+  ])("skips values that cannot be X usernames even after cleaning: %s", (url) => {
+    expect(normalizeHandle(url)).toBeNull();
+  });
+
   test.each([
     [undefined],
     [null],
