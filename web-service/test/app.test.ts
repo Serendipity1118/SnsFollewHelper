@@ -146,10 +146,10 @@ describe("settings API", () => {
     const { request, json } = setup();
     expect(await (await request("/api/settings")).json()).toEqual({
       ok: true,
-      data: { batchSize: 15, hourlyLimit: 15, dailyLimit: 15 },
+      data: { batchSize: 15, hourlyLimit: 15, dailyLimit: 15, operationStartDate: "" },
     });
     const res = await json("/api/settings", "PUT", { dailyLimit: 25 });
-    expect(await res.json()).toEqual({ ok: true, data: { batchSize: 15, hourlyLimit: 15, dailyLimit: 25 } });
+    expect(await res.json()).toEqual({ ok: true, data: { batchSize: 15, hourlyLimit: 15, dailyLimit: 25, operationStartDate: "" } });
     expect((await json("/api/settings", "PUT", { dailyLimit: "many" })).status).toBe(400);
     expect((await json("/api/settings", "PUT", { dailyLimit: 0 })).status).toBe(400);
   });
@@ -232,36 +232,44 @@ describe("shops", () => {
     expect(await res.json()).toEqual({ ok: true, data: { imported: 4, skipped: 1, duplicates: 1 } });
   });
 
-  test("lists shops with safe links and a link to the shop's queue", async () => {
+  test("lists shops with safe links and a link to the shop's people", async () => {
     const { request } = await withShops();
-    const html = await (await request("/shops")).text();
+    const html = await (await request("/list?tab=shops")).text();
     expect(html).toContain("ShopA");
     expect(html).toContain('href="https://a.example"');
     expect(html).not.toContain("javascript:alert(1)");
-    expect(html).toContain("/queue?kind=personal&amp;pref=tokyo&amp;shop=ShopF");
+    expect(html).toContain("/list?tab=personal&amp;pref=tokyo&amp;shop=ShopF");
   });
 
   test("filters shops by prefecture and keyword", async () => {
     const { request } = await withShops();
-    const osaka = await (await request("/shops?pref=osaka")).text();
+    const osaka = await (await request("/list?tab=shops&pref=osaka")).text();
     expect(osaka).toContain("ShopB");
     expect(osaka).not.toContain("ShopA");
-    const kana = await (await request(`/shops?q=${encodeURIComponent("ショップ")}`)).text();
+    const kana = await (await request(`/list?tab=shops&q=${encodeURIComponent("ショップ")}`)).text();
     expect(kana).toContain("ShopA");
     expect(kana).not.toContain("ShopB");
   });
 
-  test("queue page can be narrowed to one shop", async () => {
+  test("the people list can be narrowed to one shop", async () => {
     const { request } = await withShops();
-    const html = await (await request("/queue?kind=personal&pref=tokyo&shop=ShopF")).text();
+    const html = await (await request("/list?tab=personal&pref=tokyo&shop=ShopF")).text();
     expect(html).toContain("@frank");
     expect(html).not.toContain("@alice_1");
-    expect(html).toContain("ShopF");
+    expect(html).toContain("店舗「ShopF」の人だけを表示しています");
+    // 検索フォームを送り直しても店舗の絞り込みが外れない
+    expect(html).toContain('<input type="hidden" name="shop" value="ShopF"/>');
+  });
+
+  test("tells how to import when there is no shop list yet", async () => {
+    const { request } = await seeded();
+    const html = await (await request("/list?tab=shops")).text();
+    expect(html).toContain("店舗一覧はまだありません");
   });
 });
 
 describe("pages", () => {
-  test.each(["/", "/queue", "/shops", "/import", "/settings"])("%s renders HTML", async (path) => {
+  test.each(["/", "/list", "/list?tab=shop", "/list?tab=shops", "/admin"])("%s renders HTML", async (path) => {
     const { request } = await seeded();
     const res = await request(path);
     expect(res.status).toBe(200);
@@ -269,13 +277,45 @@ describe("pages", () => {
     expect(await res.text()).toContain("自動フォロー");
   });
 
-  test("queue page escapes scraped text and paginates", async () => {
+  test.each([
+    ["/queue?kind=shop&status=未", "/list?tab=shop&status=%E6%9C%AA"],
+    ["/queue?pref=tokyo&shop=ShopF", "/list?tab=personal&pref=tokyo&shop=ShopF"],
+    ["/shops?pref=osaka&q=x", "/list?tab=shops&pref=osaka&q=x"],
+    ["/import", "/admin#data"],
+    ["/settings", "/admin#settings"],
+  ])("redirects the old URL %s", async (from, to) => {
+    const { request } = setup();
+    const res = await request(from);
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe(to);
+  });
+
+  test("list shows Japanese labels and searches by keyword", async () => {
     const { request } = await seeded();
-    const html = await (await request("/queue?status=未&page=1&size=2")).text();
+    const html = await (await request(`/list?q=${encodeURIComponent("ShopF")}`)).text();
+    expect(html).toContain("@frank");
+    expect(html).toContain("@gina");
+    expect(html).not.toContain("@bob");
+    expect(html).toContain("東京");
+    expect(html).toContain("未着手");
+  });
+
+  test("list escapes scraped text and paginates", async () => {
+    const { request } = await seeded();
+    const html = await (await request("/list?status=未&page=1&size=2")).text();
     expect(html).toContain("frank");
     expect(html).not.toContain("<b>た</b>");
-    const page2 = await (await request("/queue?status=未&page=2&size=2")).text();
+    const page2 = await (await request("/list?status=未&page=2&size=2")).text();
     expect(page2).toContain("&lt;b&gt;た&lt;/b&gt;");
+  });
+
+  test("admin shows the automatic warm-up start date", async () => {
+    const { request, service } = await seeded();
+    service.assignNext();
+    service.mark("frank", "済");
+    const html = await (await request("/admin")).text();
+    expect(html).toContain('name="operationStartDate"');
+    expect(html).toContain("最初にフォローした日（2026-09-28）");
   });
 
   test("serves static assets and 404s unknown ones", async () => {

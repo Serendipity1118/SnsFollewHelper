@@ -1,59 +1,65 @@
 import { Layout } from "./Layout";
 
-/** 当日キュー。一覧は today.js が /api/today から描画する。 */
+/** 今日のフォロー。指標と一覧は today.js が /api/today から描画する。 */
 export function TodayPage() {
   return (
-    <Layout title="当日キュー" active="today" scripts={["/static/today.js"]}>
-      <h1>
-        Xフォロー当日キュー <span id="date" class="meta"></span>
-      </h1>
-      <p class="meta">
-        プロフィールを見て、生きている個人垢だけ手動でフォローする。店舗垢・死垢はスキップ。押した結果はすぐ保存される。
-      </p>
-      <details class="howto">
-        <summary>使い方</summary>
-        <ol>
-          <li>
-            <strong>次の件を出す</strong> で今日の名簿を作る（前日までに残った「当日」は自動で未に戻る）。
-          </li>
-          <li>
-            <strong>Xを開く</strong>（<kbd>O</kbd>）でプロフィールを開き、手動でフォローする。先頭から開くときは{" "}
-            <strong>未処理の5件を開く</strong>（残り枠の分だけ開く）。
-          </li>
-          <li>
-            <strong>済</strong>（<kbd>1</kbd>）／<strong>スキップ</strong>（<kbd>2</kbd>）／<strong>死垢</strong>（
-            <kbd>3</kbd>）。<kbd>J</kbd>
-            <kbd>K</kbd> で移動、<kbd>U</kbd> で直前を取り消す。
-          </li>
-          <li>フォロー上限に達すると「開く」が止まる。結果の入力はそのまま続けられる。</li>
-        </ol>
-      </details>
-      <div class="toolbar">
-        <button type="button" class="primary" id="next">
-          次の件を出す
-        </button>
-        <button type="button" id="open5">
-          未処理の5件を開く
-        </button>
-        <button type="button" id="done5">
-          上から5件を済にする
-        </button>
-        <button type="button" id="undo">
-          直前を取り消す
-        </button>
-        <button type="button" id="release" class="subtle">
-          当日をすべて未に戻す
-        </button>
-        <span class="count" id="progress"></span>
-      </div>
-      <div class="quota-row">
-        <p id="quota" class="quota" role="status"></p>
-        <button type="button" id="resetQuota" class="danger" hidden>
+    <Layout title="今日のフォロー" active="today" scripts={["/static/today.js"]}>
+      <section class="stats" id="stats" aria-label="進み具合"></section>
+
+      <div id="quotaAlert" class="alert alert-danger" role="status" hidden>
+        <p id="quotaAlertText"></p>
+        <button type="button" id="resetQuota" class="btn btn-danger">
           制限をリセットする
         </button>
       </div>
-      <p id="message" class="message" role="alert"></p>
-      <main id="list"></main>
+
+      <section class="worklist" aria-labelledby="worklist-title">
+        <div class="worklist-head">
+          <div>
+            <h1 id="worklist-title">
+              今日の名簿 <span id="date" class="muted"></span>
+            </h1>
+            <p class="steps">
+              <span>① Xで開く</span>
+              <span>② 生きている個人垢なら X でフォロー</span>
+              <span>③ 結果を押す（次の人へ進みます）</span>
+            </p>
+          </div>
+          <p id="progress" class="progress-text"></p>
+        </div>
+
+        <div class="bulk" id="bulk" hidden>
+          <button type="button" class="btn" id="open5">
+            まとめて開く
+          </button>
+          <button type="button" class="btn" id="doneOpened">
+            開いた分をフォローしたにする
+          </button>
+          <details class="menu">
+            <summary class="btn btn-ghost">その他</summary>
+            <div class="menu-body">
+              <button type="button" class="btn btn-ghost" id="release">
+                今日の名簿をすべて未着手に戻す
+              </button>
+            </div>
+          </details>
+        </div>
+
+        <p id="message" class="notice" role="alert" hidden></p>
+        <div id="list" class="rows"></div>
+
+        <p class="keys muted">
+          キー操作: <kbd>J</kbd>/<kbd>K</kbd> 移動・<kbd>O</kbd> Xで開く・<kbd>1</kbd> フォローした・<kbd>2</kbd> 見送る・
+          <kbd>3</kbd> 死垢・<kbd>U</kbd> 取り消す
+        </p>
+      </section>
+
+      <div id="toast" class="toast" role="status" hidden>
+        <span id="toastText"></span>
+        <button type="button" class="btn btn-small" id="toastUndo">
+          取り消す
+        </button>
+      </div>
     </Layout>
   );
 }

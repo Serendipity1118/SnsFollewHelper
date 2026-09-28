@@ -1,5 +1,5 @@
 import type { QueueItem } from "../domain/buildQueue";
-import { STATUS_ASSIGNED, STATUS_PENDING, WRITABLE_STATUSES, type TargetKind } from "../domain/constants";
+import { STATUS_ASSIGNED, STATUS_DONE, STATUS_PENDING, WRITABLE_STATUSES, type TargetKind } from "../domain/constants";
 import type { Db } from "./database";
 
 export interface Target extends QueueItem {
@@ -14,7 +14,11 @@ export interface TargetFilter {
   status?: string;
   prefecture?: string;
   shop?: string;
+  /** handle・キャスト名・店舗名の部分一致 */
+  q?: string;
 }
+
+const escapeLike = (text: string) => text.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 const SELECT = `SELECT handle, kind, priority, prefecture, shop, cast_name AS castName,
   profile_url AS profileUrl, occurrences, last_updated AS lastUpdated, status,
@@ -114,13 +118,38 @@ export function createTargetRepository(db: Db) {
       if (filter.status) conds.push("status = @status");
       if (filter.prefecture) conds.push("prefecture = @prefecture");
       if (filter.shop) conds.push("shop = @shop");
+      const q = filter.q?.trim();
+      if (q) {
+        conds.push(`(${["handle", "cast_name", "shop"].map((col) => `${col} LIKE @like ESCAPE '\\'`).join(" OR ")})`);
+      }
       const where = `WHERE ${conds.join(" AND ")}`;
-      const params = { ...filter, offset, limit };
+      const { q: _q, ...rest } = filter;
+      const params = { ...rest, ...(q ? { like: `%${escapeLike(q)}%` } : {}), offset, limit };
       const total = db.prepare(`SELECT COUNT(*) FROM targets ${where}`).pluck().get(params) as number;
       const items = db
         .prepare(`${SELECT} ${where} ORDER BY priority, handle LIMIT @limit OFFSET @offset`)
         .all(params) as Target[];
       return { total, items };
+    },
+
+    /** 種類ごとの都道府県と件数（多い順）。status を渡すとその状態だけを数える。 */
+    prefectureCounts(kind: TargetKind, status?: string): Array<{ prefecture: string; count: number }> {
+      const cond = status ? " AND status = @status" : "";
+      return db
+        .prepare(
+          `SELECT prefecture, COUNT(*) AS count FROM targets WHERE kind = @kind${cond}
+           GROUP BY prefecture ORDER BY count DESC, prefecture`,
+        )
+        .all({ kind, status }) as Array<{ prefecture: string; count: number }>;
+    },
+
+    /** 最初に「済」にした実施日（YYYY-MM-DD）。まだなければ undefined。 */
+    firstDoneDate(): string | undefined {
+      const value = db
+        .prepare("SELECT MIN(done_date) FROM targets WHERE kind = 'personal' AND status = ? AND done_date <> ''")
+        .pluck()
+        .get(STATUS_DONE) as string | null;
+      return value ?? undefined;
     },
 
     /** 済/スキップ/死垢 の個人キュー。実施日の新しい順。 */

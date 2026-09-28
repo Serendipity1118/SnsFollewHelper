@@ -8,15 +8,19 @@ import { createShopRepository, type ShopFilter } from "../db/shopRepository";
 import { createTargetRepository, type NewTarget, type Target, type TargetFilter } from "../db/targetRepository";
 import { buildQueue, type StatusEntry } from "../domain/buildQueue";
 import {
+  FOLLOW_CAP,
   QUEUE_COLUMNS,
   RESULT_COLUMNS,
   STATUS_ASSIGNED,
+  STATUS_DONE,
   STATUS_PENDING,
   WRITABLE_STATUSES,
   type TargetKind,
 } from "../domain/constants";
 import { localIsoDate, startOfLocalDay } from "../domain/dates";
 import { xProfileUrl } from "../domain/handle";
+import { prefectureLabel } from "../domain/prefectures";
+import { warmupGuide } from "../domain/warmup";
 import { queueItemFromCsv, queueItemToCsv } from "../domain/queueRows";
 import { DAY_MS, evaluateQuota, type Quota } from "../domain/safetyGuard";
 import { SHOP_REQUIRED_COLUMNS, shopFromCsv } from "../domain/shopRows";
@@ -36,11 +40,19 @@ export const settingsSchema = z.object({
   batchSize: z.number().int().min(1).max(100),
   hourlyLimit: z.number().int().min(1).max(200),
   dailyLimit: z.number().int().min(1).max(1000),
+  /** ウォームアップの起点（YYYY-MM-DD）。"" は最初に「済」にした日から数える */
+  operationStartDate: z.union([z.literal(""), z.iso.date()]),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
 /** 週1のウォームアップ値（docs/Xフォロー優先キュー.md: 1日10〜15件, 1セッション15件まで）。 */
-export const DEFAULT_SETTINGS: Settings = { batchSize: 15, hourlyLimit: 15, dailyLimit: 15 };
+export const DEFAULT_SETTINGS: Settings = { batchSize: 15, hourlyLimit: 15, dailyLimit: 15, operationStartDate: "" };
+
+const NUMERIC_SETTINGS = ["batchSize", "hourlyLimit", "dailyLimit"] as const;
+
+/** 画面表示用に都道府県の日本語名を付ける。 */
+const withLabel = (target: Target) => ({ ...target, prefectureLabel: prefectureLabel(target.prefecture) });
+export type LabeledTarget = ReturnType<typeof withLabel>;
 
 /** 結果として付けられる状態。「当日」は取り消し用。 */
 export const MARKABLE_STATUSES: ReadonlySet<string> = new Set([...WRITABLE_STATUSES, STATUS_ASSIGNED]);
@@ -49,6 +61,7 @@ type Counts = Record<TargetKind, Record<string, number>>;
 type PageQuery = { page: number; pageSize: number };
 
 const QUOTA_RESET_KEY = "quotaResetAt";
+const PENDING_TOP_PREFECTURES = 3;
 
 export function createQueueService(db: Db, now: () => Date = () => new Date()) {
   const targets = createTargetRepository(db);
@@ -58,12 +71,13 @@ export function createQueueService(db: Db, now: () => Date = () => new Date()) {
 
   const settings = (): Settings => {
     const stored = settingsRepo.all();
-    const merged = Object.fromEntries(
-      Object.entries(DEFAULT_SETTINGS).map(([key, fallback]) => {
+    const numeric = Object.fromEntries(
+      NUMERIC_SETTINGS.map((key) => {
         const value = Number(stored[key]);
-        return [key, Number.isInteger(value) ? value : fallback];
+        return [key, Number.isInteger(value) ? value : DEFAULT_SETTINGS[key]];
       }),
     );
+    const merged = { ...numeric, operationStartDate: stored.operationStartDate ?? DEFAULT_SETTINGS.operationStartDate };
     const parsed = settingsSchema.safeParse(merged);
     return parsed.success ? parsed.data : DEFAULT_SETTINGS;
   };
@@ -92,17 +106,51 @@ export function createQueueService(db: Db, now: () => Date = () => new Date()) {
     return target?.kind === "personal" ? target : undefined;
   };
 
+  /** 画面上部の指標: 累計フォロー・名簿の残り・ウォームアップの目安。 */
+  const summary = () => {
+    const personal = counts().personal;
+    const configured = settings().operationStartDate;
+    const firstFollowDate = targets.firstDoneDate() ?? null;
+    const startDate = configured || firstFollowDate;
+    const guide = startDate ? warmupGuide(startDate, localIsoDate(now())) : null;
+    return {
+      firstFollowDate,
+      followed: personal[STATUS_DONE] ?? 0,
+      followCap: FOLLOW_CAP,
+      pending: personal[STATUS_PENDING] ?? 0,
+      pendingTop: targets
+        .prefectureCounts("personal", STATUS_PENDING)
+        .slice(0, PENDING_TOP_PREFECTURES)
+        .map((p) => ({ ...p, label: prefectureLabel(p.prefecture) })),
+      warmup: startDate && guide ? { startDate, auto: !configured, ...guide } : null,
+    };
+  };
+
+  const counts = (): Counts =>
+    targets.counts().reduce<Counts>(
+      (acc, row) => ({ ...acc, [row.kind]: { ...acc[row.kind], [row.status]: row.count } }),
+      { personal: {}, shop: {} },
+    );
+
   const today = () => {
     const at = now();
     const dayStart = startOfLocalDay(at);
     targets.releaseAssigned(at.getTime(), dayStart);
-    return { date: localIsoDate(at), items: targets.assignedSince(dayStart), quota: quota(), settings: settings() };
+    return {
+      date: localIsoDate(at),
+      items: targets.assignedSince(dayStart).map(withLabel),
+      quota: quota(),
+      settings: settings(),
+      summary: summary(),
+    };
   };
 
   return {
     settings,
     quota,
     today,
+    summary,
+    counts,
 
     updateSettings(patch: Partial<Settings>): Settings {
       const parsed = settingsSchema.safeParse({ ...settings(), ...patch });
@@ -196,7 +244,7 @@ export function createQueueService(db: Db, now: () => Date = () => new Date()) {
     },
 
     /** 結果を即時保存する。status="当日" は取り消し。 */
-    mark(handle: string, status: string): { item: Target; quota: Quota } {
+    mark(handle: string, status: string): { item: LabeledTarget; quota: Quota } {
       if (!MARKABLE_STATUSES.has(status)) throw new QueueError(`状態 ${status} は指定できません`, "invalid");
       const current = findPersonal(handle);
       if (!current) throw new QueueError(`handle ${handle} は個人キューにありません`, "not_found");
@@ -213,7 +261,7 @@ export function createQueueService(db: Db, now: () => Date = () => new Date()) {
         );
         logs.record(handle, current.status, status, at.getTime());
       }
-      return { item: targets.findByHandle(handle)!, quota: quota() };
+      return { item: withLabel(targets.findByHandle(handle)!), quota: quota() };
     },
 
     /** プロフィールを開いてよいか。上限到達時は開かせない（結果入力は止めない）。 */
@@ -226,12 +274,9 @@ export function createQueueService(db: Db, now: () => Date = () => new Date()) {
       return { ok: true, url: xProfileUrl(handle), quota: q };
     },
 
-    counts(): Counts {
-      const counts: Counts = { personal: {}, shop: {} };
-      for (const row of targets.counts()) {
-        counts[row.kind] = { ...counts[row.kind], [row.status]: row.count };
-      }
-      return counts;
+    /** 名簿の都道府県絞り込み用（件数の多い順）。 */
+    targetPrefectures(kind: TargetKind) {
+      return targets.prefectureCounts(kind).map((p) => ({ ...p, label: prefectureLabel(p.prefecture) }));
     },
 
     list(query: TargetFilter & PageQuery) {

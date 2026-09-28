@@ -203,11 +203,12 @@ describe("mark and quota", () => {
 describe("settings", () => {
   test("has conservative defaults and validates updates", () => {
     const { service } = createTestService();
-    expect(service.settings()).toEqual({ batchSize: 15, hourlyLimit: 15, dailyLimit: 15 });
+    expect(service.settings()).toEqual({ batchSize: 15, hourlyLimit: 15, dailyLimit: 15, operationStartDate: "" });
     expect(service.updateSettings({ dailyLimit: 30 })).toEqual({
       batchSize: 15,
       hourlyLimit: 15,
       dailyLimit: 30,
+      operationStartDate: "",
     });
     expect(() => service.updateSettings({ batchSize: 0 })).toThrow(QueueError);
   });

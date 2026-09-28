@@ -67,6 +67,9 @@ export const SKIP_HANDLES: ReadonlySet<string> = new Set([
 
 export const SHOP_SHARE_THRESHOLD = 5;
 
+/** Xの総フォロー上限の目安（フォロワー約4,500未満では超えられない）。 */
+export const FOLLOW_CAP = 5000;
+
 export function prefRank(pref: string): number {
   return PREF_RANK[pref] ?? PREF_RANK_DEFAULT;
 }
