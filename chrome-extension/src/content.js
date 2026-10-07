@@ -74,14 +74,28 @@
     }
   }
 
-  /** フォロー中の表示が続いていれば閉じる（待ち時間中にフォロー解除されたら何もしない）。 */
-  function scheduleClose() {
+  /**
+   * delayMs 待ってから、表示がまだ expected のどれかなら kind で知らせる（＝タブを閉じる）。
+   * 待ち時間中にフォロー解除・再読み込みなどで表示が変わったら何もしない。
+   */
+  function scheduleClose(kind, delayMs, expected) {
     const current = session;
     clearTimeout(current.closeTimer);
     current.closeTimer = setTimeout(() => {
       if (session !== current || !settings.enabled) return;
-      if (FOLLOWING.has(H.detectProfile(document, current.handle))) report("followed_now");
-    }, settings.closeDelayMs);
+      if (expected.has(H.detectProfile(document, current.handle))) report(kind);
+    }, delayMs);
+  }
+
+  /** 開いた時点で決まった状態（存在しない・凍結・フォロー済み）のタブを、設定の秒数だけ待ってから閉じる。 */
+  function scheduleAutoClose(state) {
+    if (!FOLLOWING.has(state)) {
+      scheduleClose(state, settings.autoCloseDelayMs, new Set([state]));
+      return;
+    }
+    // フォローを押した後に記録に失敗して再読み込みしたタブは「済」として、フォロー直後と同じ秒数で閉じる
+    if (wasClicked(session.handle)) scheduleClose("followed_now", settings.closeDelayMs, FOLLOWING);
+    else scheduleClose(state, settings.autoCloseDelayMs, FOLLOWING);
   }
 
   function check() {
@@ -91,7 +105,7 @@
     if (current.awaitingFollow) {
       if (FOLLOWING.has(state)) {
         current.awaitingFollow = false;
-        scheduleClose();
+        scheduleClose("followed_now", settings.closeDelayMs, FOLLOWING);
       }
       return;
     }
@@ -100,7 +114,7 @@
     current.decided = true;
     clearTimeout(current.detectTimer);
     if (state === "unfollowed") return; // 未フォローのタブは残す
-    report(FOLLOWING.has(state) && wasClicked(current.handle) ? "followed_now" : state);
+    scheduleAutoClose(state);
   }
 
   function scheduleCheck() {

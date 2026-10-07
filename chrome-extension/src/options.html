@@ -21,6 +21,9 @@
       <label for="delay">フォローしてからタブを閉じるまでの秒数</label>
       <input id="delay" type="number" min="0" max="10" step="0.5" />
       <p class="hint">0〜10秒。初期値は 1.5 秒です。</p>
+      <label for="autoDelay">存在しない・凍結・フォロー済みのタブを閉じるまでの秒数</label>
+      <input id="autoDelay" type="number" min="0" max="60" step="0.5" />
+      <p class="hint">0〜60秒。初期値は 15 秒です。開いてから状態が分かった時点から数えます。</p>
       <label for="server">WebサービスのURL</label>
       <input id="server" type="url" placeholder="http://127.0.0.1:8787" />
       <p class="hint">http://127.0.0.1 または http://localhost のみ指定できます。</p>

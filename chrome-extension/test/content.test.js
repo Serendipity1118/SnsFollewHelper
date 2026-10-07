@@ -8,6 +8,7 @@ import "../src/detect.js";
 
 const DETECT_WAIT_MS = 200; // debounce(150ms) より長く
 const CLOSE_DELAY_MS = 1500;
+const AUTO_CLOSE_DELAY_MS = 15_000;
 
 // jsdom 環境では URL が jsdom のものになるため、パスで解決する
 const srcPath = (name) => resolve(process.cwd(), "src", name);
@@ -64,14 +65,49 @@ beforeEach(() => {
 });
 
 describe("content script", () => {
-  test("reports profiles that are already followed", async () => {
+  test("reports profiles that are already followed after the auto-close delay", async () => {
     await visit("alice", header("1-unfollow", "alice"));
+    await vi.advanceTimersByTimeAsync(AUTO_CLOSE_DELAY_MS - DETECT_WAIT_MS - 100);
+    expect(sendMessage).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(300);
     expect(sendMessage).toHaveBeenCalledWith({ type: "report", handle: "alice", kind: "followed" });
   });
 
-  test("reports accounts that do not exist", async () => {
+  test("reports accounts that do not exist after the auto-close delay", async () => {
     await visit("carol", '<div data-testid="emptyState">このアカウントは存在しません</div>');
+    expect(sendMessage).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(AUTO_CLOSE_DELAY_MS);
     expect(sendMessage).toHaveBeenCalledWith({ type: "report", handle: "carol", kind: "not_found" });
+  });
+
+  test("reports suspended accounts after the auto-close delay", async () => {
+    await visit("hana", '<div data-testid="emptyState">アカウントは凍結されています</div>');
+    expect(sendMessage).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(AUTO_CLOSE_DELAY_MS);
+    expect(sendMessage).toHaveBeenCalledWith({ type: "report", handle: "hana", kind: "suspended" });
+  });
+
+  test("keeps an already-followed tab when the person unfollows during the auto-close delay", async () => {
+    await visit("ivan", header("1-unfollow", "ivan"));
+    document.querySelector('[data-testid="1-unfollow"]').setAttribute("data-testid", "1-follow");
+    await vi.advanceTimersByTimeAsync(AUTO_CLOSE_DELAY_MS);
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  test("uses the auto-close delay from the options", async () => {
+    storageListener({ autoCloseDelayMs: { newValue: 3000 } }, "local");
+    await visit("jack", header("1-unfollow", "jack"));
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(sendMessage).toHaveBeenCalledWith({ type: "report", handle: "jack", kind: "followed" });
+    storageListener({ autoCloseDelayMs: { newValue: AUTO_CLOSE_DELAY_MS } }, "local");
+  });
+
+  test("does not close an already-followed tab when moving to another page during the delay", async () => {
+    await visit("kate", header("1-unfollow", "kate"));
+    history.pushState({}, "", "/home");
+    await vi.advanceTimersByTimeAsync(AUTO_CLOSE_DELAY_MS + 1000);
+    expect(sendMessage).not.toHaveBeenCalled();
   });
 
   test("leaves unfollowed profiles open until the person clicks Follow, then reports after the delay", async () => {
@@ -106,12 +142,14 @@ describe("content script", () => {
   test("shows the server error and keeps the tab when reporting fails", async () => {
     sendMessage.mockResolvedValue({ close: false, error: "Webサービスに接続できませんでした。" });
     await visit("frank", header("1-unfollow", "frank"));
+    await vi.advanceTimersByTimeAsync(AUTO_CLOSE_DELAY_MS);
     expect(document.body.textContent).toContain("Webサービスに接続できませんでした。");
   });
 
   test("does nothing while turned off", async () => {
     storageListener({ enabled: { newValue: false } }, "local");
     await visit("erin", header("1-unfollow", "erin"));
+    await vi.advanceTimersByTimeAsync(AUTO_CLOSE_DELAY_MS);
     expect(sendMessage).not.toHaveBeenCalled();
     storageListener({ enabled: { newValue: true } }, "local");
   });
