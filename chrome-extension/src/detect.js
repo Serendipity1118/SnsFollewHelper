@@ -75,7 +75,14 @@
     ["requested", "pending"],
   ]);
 
-  const buttonState = (button) => IG_STATE_BY_TEXT.get(button.textContent.trim().toLowerCase());
+  /** 画面に出る文字だけ。「フォロー中」の横のアイコンは <svg><title>下向きシェブロンアイコン</title> を持つので除く。 */
+  function visibleText(node) {
+    if (node.nodeType === Node.TEXT_NODE) return node.nodeValue;
+    if (node.nodeName.toLowerCase() === "svg") return "";
+    return [...node.childNodes].map(visibleText).join("");
+  }
+
+  const buttonState = (button) => IG_STATE_BY_TEXT.get(visibleText(button).trim().toLowerCase());
 
   /**
    * 表示中のプロフィール本人のヘッダー。画面遷移の直後に前の人のヘッダーが残っていても取り違えないよう、

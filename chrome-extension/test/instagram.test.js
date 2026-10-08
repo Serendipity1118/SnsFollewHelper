@@ -67,6 +67,13 @@ describe("detectInstagramProfile", () => {
     expect(detect(document, "instagram", "alice")).toBe(expected);
   });
 
+  test("ignores the chevron icon's title inside the Following button", () => {
+    // 2026-10 の実際の画面: 「フォロー中」の横に <svg><title>下向きシェブロンアイコン</title></svg> が入る
+    const chevron = '<span><svg aria-label="下向きシェブロンアイコン" role="img"><title>下向きシェブロンアイコン</title><path d=""></path></svg></span>';
+    expect(detectInstagramProfile(igPage("alice", `フォロー中</div><div>${chevron}`), "alice")).toBe("followed");
+    expect(detectInstagramProfile(igPage("alice", `リクエスト済み</div><div>${chevron}`), "alice")).toBe("pending");
+  });
+
   test("reports missing accounts", () => {
     document.body.innerHTML =
       "<main><div><span>このページはご利用いただけません。</span><span>リンクに問題があるか、ページが削除された可能性があります。</span></div></main>";
