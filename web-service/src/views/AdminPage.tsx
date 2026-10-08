@@ -1,7 +1,9 @@
 import type { Settings } from "../services/queueService";
+import type { PlatformConfig } from "../domain/platform";
 import { Layout } from "./Layout";
 
 interface AdminPageProps {
+  platform: PlatformConfig;
   settings: Settings;
   /** 運用開始日を空欄にしたときに使う日（最初に「済」にした日） */
   firstFollowDate: string | null;
@@ -17,17 +19,34 @@ function NumberField(props: { name: keyof Settings; label: string; value: number
   );
 }
 
-function UploadForm(props: { action: string; title: string; description: string; withKind?: boolean }) {
+interface UploadFormProps {
+  platform: PlatformConfig;
+  /** /import/ の後ろ（casts など）。forms.js が結果の文言を選ぶのにも使う */
+  name: "casts" | "shops" | "queue" | "results";
+  title: string;
+  description: string;
+  withKind?: boolean;
+}
+
+function UploadForm(props: UploadFormProps) {
+  const names = props.platform.exportNames;
   return (
-    <form class="upload" data-api={props.action} data-method="POST" enctype="multipart/form-data">
+    <form
+      class="upload"
+      data-api={`${props.platform.apiBase}/import/${props.name}`}
+      data-format={props.name}
+      data-label={props.platform.label}
+      data-method="POST"
+      enctype="multipart/form-data"
+    >
       <h3>{props.title}</h3>
       <p class="muted">{props.description}</p>
       <div class="upload-row">
         <input type="file" name="file" accept=".csv,text/csv" required aria-label={`${props.title}のCSV`} />
         {props.withKind ? (
           <select name="kind" aria-label="種類">
-            <option value="personal">個人（x_follow_queue.csv）</option>
-            <option value="shop">店舗垢候補（x_follow_shop_candidates.csv）</option>
+            <option value="personal">個人（{names.personal}）</option>
+            <option value="shop">店舗垢候補（{names.shop}）</option>
           </select>
         ) : null}
         <button type="submit" class="btn btn-primary">
@@ -39,11 +58,11 @@ function UploadForm(props: { action: string; title: string; description: string;
   );
 }
 
-function SettingsSection({ settings, firstFollowDate }: AdminPageProps) {
+function SettingsSection({ platform, settings, firstFollowDate }: AdminPageProps) {
   return (
     <section class="card" id="settings">
-      <h2>設定</h2>
-      <form class="settings-form" data-api="/api/settings" data-method="PUT" data-json>
+      <h2>設定（{platform.label}）</h2>
+      <form class="settings-form" data-api={`${platform.apiBase}/settings`} data-format="settings" data-method="PUT" data-json>
         <div class="field-grid">
           <NumberField
             name="batchSize"
@@ -64,7 +83,7 @@ function SettingsSection({ settings, firstFollowDate }: AdminPageProps) {
             label="24時間あたりの上限"
             value={settings.dailyLimit}
             max={1000}
-            hint="目安: 1週目10〜15／2週目20〜25／3週目以降30〜40。"
+            hint={platform.warmupHint}
           />
           <label class="field">
             <span class="field-label">運用開始日</span>
@@ -87,8 +106,11 @@ function SettingsSection({ settings, firstFollowDate }: AdminPageProps) {
 }
 
 export function AdminPage(props: AdminPageProps) {
+  const { platform } = props;
+  const api = platform.apiBase;
+  const names = platform.exportNames;
   return (
-    <Layout title="管理" active="admin" scripts={["/static/forms.js"]}>
+    <Layout title="管理" platform={platform} active="admin" scripts={["/static/forms.js"]}>
       <h1>管理</h1>
       <SettingsSection {...props} />
 
@@ -96,14 +118,16 @@ export function AdminPage(props: AdminPageProps) {
         <h2>データ更新</h2>
         <p class="muted">ポケパラから取り直した CSV を入れるときに使います。</p>
         <UploadForm
-          action="/api/import/casts"
+          platform={platform}
+          name="casts"
           title="キャスト名簿（pokepara_all_casts.csv）"
-          description="X(Twitter) 列が必要。handle ごとに優先度を付け直します。フォローした・見送りなどの結果はそのまま残ります。"
+          description={`${platform.csvColumn} 列から ${platform.label} の名簿を作ります。handle ごとに優先度を付け直します。フォローした・見送りなどの結果はそのまま残ります。${platform.label} 以外の名簿には影響しません。`}
         />
         <UploadForm
-          action="/api/import/shops"
+          platform={platform}
+          name="shops"
           title="店舗一覧（pokepara_all_shops.csv）"
-          description="店舗名・店舗URL 列が必要。店舗一覧を入れ替えます。名簿には影響しません。"
+          description="店舗名・店舗URL 列が必要。店舗一覧（X・Instagram 共通）を入れ替えます。名簿には影響しません。"
         />
       </section>
 
@@ -112,17 +136,17 @@ export function AdminPage(props: AdminPageProps) {
         <p class="muted">旧ツールと同じ列・UTF-8(BOM)・CRLF。Excel で直接開かず、テキストエディタか取込で扱ってください。</p>
         <ul class="download-list">
           <li>
-            <a class="btn" href="/api/export/queue.csv?kind=personal">
-              個人の名簿（x_follow_queue.csv）
+            <a class="btn" href={`${api}/export/queue.csv?kind=personal`}>
+              個人の名簿（{names.personal}）
             </a>
           </li>
           <li>
-            <a class="btn" href="/api/export/queue.csv?kind=shop">
-              店舗垢候補（x_follow_shop_candidates.csv）
+            <a class="btn" href={`${api}/export/queue.csv?kind=shop`}>
+              店舗垢候補（{names.shop}）
             </a>
           </li>
           <li>
-            <a class="btn" href="/api/export/results.csv">
+            <a class="btn" href={`${api}/export/results.csv`}>
               結果すべて（handle, 状態, 実施日）
             </a>
           </li>
@@ -135,13 +159,15 @@ export function AdminPage(props: AdminPageProps) {
           <span class="muted">Python 版の CSV を引き継ぐときだけ使います</span>
         </summary>
         <UploadForm
-          action="/api/import/queue"
+          platform={platform}
+          name="queue"
           title="既存のキューCSV"
-          description="x_follow_queue.csv / x_follow_shop_candidates.csv。選んだ種類の中身を置き換えます。結果の付いていない「当日」は未着手に戻します。"
+          description={`${names.personal} / ${names.shop}。選んだ種類の中身を置き換えます。結果の付いていない「当日」は未着手に戻します。`}
           withKind
         />
         <UploadForm
-          action="/api/import/results"
+          platform={platform}
+          name="results"
           title="today.html の結果CSV"
           description="follow_results_*.csv（handle, 状態, 実施日）。済・既フォロー・スキップ・死垢だけを書き込みます。"
         />

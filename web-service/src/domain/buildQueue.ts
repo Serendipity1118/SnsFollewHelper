@@ -89,16 +89,25 @@ function renumber(items: QueueItem[]): QueueItem[] {
   return [...items].sort(compareQueue).map((item, i) => ({ ...item, priority: i + 1 }));
 }
 
+/** handle を読む列と、その値から handle を取り出す関数。既定は X(Twitter) 列。 */
+export interface HandleSource {
+  column: string;
+  normalize: (raw: string | null | undefined) => string | null;
+}
+
+const X_SOURCE: HandleSource = { column: "X(Twitter)", normalize: normalizeHandle };
+
 /** build_queue.build の移植。キャストCSVの行から個人キューと店舗垢候補を作る。 */
 export function buildQueue(
   castRows: readonly CsvRow[],
   existingPersonal: ReadonlyMap<string, StatusEntry>,
   existingShop: ReadonlyMap<string, StatusEntry>,
+  source: HandleSource = X_SOURCE,
 ): BuildResult {
   const grouped = new Map<string, CsvRow[]>();
   let skipped = 0;
   for (const row of castRows) {
-    const handle = normalizeHandle(row["X(Twitter)"]);
+    const handle = source.normalize(row[source.column]);
     if (!handle) {
       skipped += 1;
       continue;

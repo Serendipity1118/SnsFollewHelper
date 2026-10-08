@@ -8,7 +8,6 @@ import { createShopRepository, type ShopFilter } from "../db/shopRepository";
 import { createTargetRepository, type NewTarget, type Target, type TargetFilter } from "../db/targetRepository";
 import { buildQueue, type StatusEntry } from "../domain/buildQueue";
 import {
-  FOLLOW_CAP,
   QUEUE_COLUMNS,
   RESULT_COLUMNS,
   STATUS_ALREADY,
@@ -19,7 +18,7 @@ import {
   type TargetKind,
 } from "../domain/constants";
 import { localIsoDate, startOfLocalDay } from "../domain/dates";
-import { xProfileUrl } from "../domain/handle";
+import { PLATFORMS, type Platform, type PlatformConfig } from "../domain/platform";
 import { prefectureLabel } from "../domain/prefectures";
 import { warmupGuide } from "../domain/warmup";
 import { queueItemFromCsv, queueItemToCsv } from "../domain/queueRows";
@@ -46,8 +45,8 @@ export const settingsSchema = z.object({
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
-/** 週1のウォームアップ値（docs/Xフォロー優先キュー.md: 1日10〜15件, 1セッション15件まで）。 */
-export const DEFAULT_SETTINGS: Settings = { batchSize: 15, hourlyLimit: 15, dailyLimit: 15, operationStartDate: "" };
+/** X の週1のウォームアップ値（docs/Xフォロー優先キュー.md: 1日10〜15件, 1セッション15件まで）。 */
+export const DEFAULT_SETTINGS: Settings = PLATFORMS.x.defaultSettings;
 
 const NUMERIC_SETTINGS = ["batchSize", "hourlyLimit", "dailyLimit"] as const;
 
@@ -64,27 +63,34 @@ type PageQuery = { page: number; pageSize: number };
 const QUOTA_RESET_KEY = "quotaResetAt";
 const PENDING_TOP_PREFECTURES = 3;
 
-export function createQueueService(db: Db, now: () => Date = () => new Date()) {
-  const targets = createTargetRepository(db);
-  const logs = createActionLogRepository(db);
+/** 名簿・上限・設定は platform ごとに独立する（店舗一覧だけは共通）。 */
+export function createQueueService(db: Db, now: () => Date = () => new Date(), platform: Platform = "x") {
+  const config: PlatformConfig = PLATFORMS[platform];
+  const defaults: Settings = config.defaultSettings;
+  const targets = createTargetRepository(db, platform);
+  const logs = createActionLogRepository(db, platform);
   const settingsRepo = createSettingsRepository(db);
-  const shops = createShopRepository(db);
+  const shops = createShopRepository(db, platform);
+  const settingKey = (key: string) => `${config.settingsKeyPrefix}${key}`;
 
   const settings = (): Settings => {
     const stored = settingsRepo.all();
     const numeric = Object.fromEntries(
       NUMERIC_SETTINGS.map((key) => {
-        const value = Number(stored[key]);
-        return [key, Number.isInteger(value) ? value : DEFAULT_SETTINGS[key]];
+        const value = Number(stored[settingKey(key)]);
+        return [key, Number.isInteger(value) ? value : defaults[key]];
       }),
     );
-    const merged = { ...numeric, operationStartDate: stored.operationStartDate ?? DEFAULT_SETTINGS.operationStartDate };
+    const merged = {
+      ...numeric,
+      operationStartDate: stored[settingKey("operationStartDate")] ?? defaults.operationStartDate,
+    };
     const parsed = settingsSchema.safeParse(merged);
-    return parsed.success ? parsed.data : DEFAULT_SETTINGS;
+    return parsed.success ? parsed.data : defaults;
   };
 
   const quotaResetAt = (): number => {
-    const value = Number(settingsRepo.all()[QUOTA_RESET_KEY]);
+    const value = Number(settingsRepo.all()[settingKey(QUOTA_RESET_KEY)]);
     return Number.isFinite(value) ? value : 0;
   };
 
@@ -113,11 +119,11 @@ export function createQueueService(db: Db, now: () => Date = () => new Date()) {
     const configured = settings().operationStartDate;
     const firstFollowDate = targets.firstDoneDate() ?? null;
     const startDate = configured || firstFollowDate;
-    const guide = startDate ? warmupGuide(startDate, localIsoDate(now())) : null;
+    const guide = startDate ? warmupGuide(startDate, localIsoDate(now()), config.warmupStages) : null;
     return {
       firstFollowDate,
       followed: personal[STATUS_DONE] ?? 0,
-      followCap: FOLLOW_CAP,
+      followCap: config.followCap,
       pending: personal[STATUS_PENDING] ?? 0,
       pendingTop: targets
         .prefectureCounts("personal", STATUS_PENDING)
@@ -147,6 +153,7 @@ export function createQueueService(db: Db, now: () => Date = () => new Date()) {
   };
 
   return {
+    platform: config,
     settings,
     quota,
     today,
@@ -158,17 +165,20 @@ export function createQueueService(db: Db, now: () => Date = () => new Date()) {
       if (!parsed.success) {
         throw new QueueError(`設定値が不正です: ${parsed.error.issues.map((i) => i.path.join(".")).join(", ")}`, "invalid");
       }
-      settingsRepo.setMany(Object.entries(parsed.data).map(([k, v]) => [k, String(v)] as const));
+      settingsRepo.setMany(Object.entries(parsed.data).map(([k, v]) => [settingKey(k), String(v)] as const));
       return parsed.data;
     },
 
     /** 元データ（pokepara_all_casts.csv）からキューを作り直す。進捗は handle ごとに引き継ぐ。 */
     importCasts(text: string) {
       const rows = parseCsv(text);
-      requireColumns(rows, text, ["X(Twitter)"]);
+      requireColumns(rows, text, [config.csvColumn]);
       const personalMap = statusMap("personal");
       const shopMap = statusMap("shop");
-      const result = buildQueue(rows, personalMap, shopMap);
+      const result = buildQueue(rows, personalMap, shopMap, {
+        column: config.csvColumn,
+        normalize: config.normalizeHandle,
+      });
       const withAssignment = (map: typeof personalMap) => (item: NewTarget): NewTarget => ({
         ...item,
         assignedAt: item.status === STATUS_ASSIGNED ? (map.get(item.handle)?.assignedAt ?? null) : null,
@@ -236,7 +246,7 @@ export function createQueueService(db: Db, now: () => Date = () => new Date()) {
 
     /** フォロー上限の集計を今からやり直す。済の結果や履歴は消さない。 */
     resetQuota(): Quota {
-      settingsRepo.setMany([[QUOTA_RESET_KEY, String(now().getTime())]]);
+      settingsRepo.setMany([[settingKey(QUOTA_RESET_KEY), String(now().getTime())]]);
       return quota();
     },
 
@@ -274,7 +284,7 @@ export function createQueueService(db: Db, now: () => Date = () => new Date()) {
       const q = quota();
       if (!findPersonal(handle)) return { ok: false, reason: "unknown", quota: q };
       if (q.blocked) return { ok: false, reason: "quota", quota: q };
-      return { ok: true, url: xProfileUrl(handle), quota: q };
+      return { ok: true, url: config.profileUrl(handle), quota: q };
     },
 
     /** 名簿の都道府県絞り込み用（件数の多い順）。 */

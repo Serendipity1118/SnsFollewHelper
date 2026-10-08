@@ -1,5 +1,5 @@
 // 今日のフォロー画面。結果は押した時点でサーバーへ保存する。
-// Xへの通信・自動操作はしない。プロフィールは /go/:handle 経由で人が開く。
+// X / Instagram への通信・自動操作はしない。プロフィールは <basePath>/go/:handle 経由で人が開く。
 // Chrome拡張（chrome-extension/）が記録した結果は、定期的な再取得で一覧に反映する。
 (() => {
   "use strict";
@@ -22,6 +22,12 @@
 
   const $ = (id) => document.getElementById(id);
   const list = $("list");
+  // どのSNSの名簿か（TodayPage.tsx の #today に埋め込む）。X は API "/api"・画面 ""、Instagram は "/api/ig"・"/ig"
+  const config = $("today").dataset;
+  const API = config.apiBase || "/api";
+  const BASE = config.basePath || "";
+  const LABEL = config.label || "X";
+  const PLATFORM = config.platform || "x";
   const state = {
     date: "",
     items: [],
@@ -64,7 +70,7 @@
 
   const fmt = (n) => Number(n).toLocaleString("ja-JP");
   const formatTime = (ms) => new Date(ms).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
-  const openUrl = (handle) => "/go/" + encodeURIComponent(handle);
+  const openUrl = (handle) => `${BASE}/go/` + encodeURIComponent(handle);
   const httpUrl = (s) => (/^https?:\/\//.test(String(s || "")) ? String(s) : "");
   const displayName = (item) => item.castName || `@${item.handle}`;
   const unprocessed = () => state.items.filter((item) => item.status === ASSIGNED);
@@ -78,7 +84,8 @@
 
   // ---- 開いた印（ブラウザにだけ保存。日付ごと） ----
 
-  const openedKey = () => `opened:${state.date}`;
+  // X の印は従来のキーのまま（更新前に付けた印を消さない）
+  const openedKey = () => (PLATFORM === "x" ? `opened:${state.date}` : `opened:${PLATFORM}:${state.date}`);
 
   function loadOpened() {
     try {
@@ -189,7 +196,7 @@
 
   function opener(item) {
     if (!canOpen()) return el("span", { class: "btn btn-primary", "aria-disabled": "true", text: "上限到達" });
-    return el("a", { class: "btn btn-primary", href: openUrl(item.handle), target: "_blank", rel: "noopener", dataset: { action: "open", handle: item.handle }, text: "Xで開く" });
+    return el("a", { class: "btn btn-primary", href: openUrl(item.handle), target: "_blank", rel: "noopener", dataset: { action: "open", handle: item.handle }, text: `${LABEL}で開く` });
   }
 
   function renderRow(item, index) {
@@ -240,7 +247,7 @@
     if (!state.summary.pending) {
       return el("div", { class: "empty-card" }, [
         el("h2", { text: "未着手の名簿がありません" }),
-        el("p", {}, [el("a", { href: "/admin#data", text: "管理 → データ更新" }), " でキャスト名簿（pokepara_all_casts.csv）を取り込んでください。"]),
+        el("p", {}, [el("a", { href: `${BASE}/admin#data`, text: "管理 → データ更新" }), " でキャスト名簿（pokepara_all_casts.csv）を取り込んでください。"]),
       ]);
     }
     return el("div", { class: "empty-card" }, [
@@ -312,7 +319,7 @@
   }
 
   async function load() {
-    applyToday(await api("/api/today"));
+    applyToday(await api(`${API}/today`));
     render();
   }
 
@@ -339,7 +346,7 @@
     const pos = order.indexOf(handle);
     const before = state.items.find((item) => item.handle === handle);
     try {
-      const data = await api(`/api/targets/${encodeURIComponent(handle)}/status`, {
+      const data = await api(`${API}/targets/${encodeURIComponent(handle)}/status`, {
         method: "PUT",
         body: JSON.stringify({ status }),
       });
@@ -347,7 +354,7 @@
       state.quota = data.quota;
       adjustFollowed(before?.status, data.item.status);
       // 最初のフォローでウォームアップの起点が決まるので、そのときだけ指標を取り直す
-      if (!state.summary.warmup && data.item.status === DONE) state.summary = (await api("/api/today")).summary;
+      if (!state.summary.warmup && data.item.status === DONE) state.summary = (await api(`${API}/today`)).summary;
       if (status === ASSIGNED) {
         state.history = state.history.filter((h) => h !== handle);
         state.active = handle;
@@ -397,7 +404,7 @@
     const { action, handle, status } = target.dataset;
     if (target.id === "adjustLimit") {
       run(target, async () => {
-        await api("/api/settings", { method: "PUT", body: JSON.stringify({ dailyLimit: Number(target.dataset.limit) }) });
+        await api(`${API}/settings`, { method: "PUT", body: JSON.stringify({ dailyLimit: Number(target.dataset.limit) }) });
         await load();
       });
     } else if (action === "open") {
@@ -413,7 +420,7 @@
       mark(handle, ASSIGNED, { remember: false });
     } else if (action === "next") {
       run(target, async () => {
-        applyToday(await api("/api/today/next", { method: "POST" }));
+        applyToday(await api(`${API}/today/next`, { method: "POST" }));
         if (!unprocessed().length) showMessage("未着手の名簿がありません。管理 → データ更新で元データを取り込んでください。");
       });
     }
@@ -434,12 +441,13 @@
   $("resetQuota").addEventListener("click", (ev) => {
     const ok = window.confirm(
       "フォロー上限の集計をリセットします。\n" +
-        "Xの制限対策として設けている上限なので、短時間に続けてフォローするとアカウント制限のおそれがあります。\n" +
+        `${LABEL}の制限対策として設けている上限なので、` +
+        "短時間に続けてフォローするとアカウント制限のおそれがあります。\n" +
         "フォローした結果は消えません。リセットしますか？",
     );
     if (!ok) return;
     run(ev.currentTarget, async () => {
-      state.quota = await api("/api/quota/reset", { method: "POST" });
+      state.quota = await api(`${API}/quota/reset`, { method: "POST" });
       showMessage("フォロー上限の集計をリセットしました。");
     });
   });
@@ -448,7 +456,7 @@
     if (!window.confirm("今日の名簿で結果の付いていない人をすべて未着手に戻します。よいですか？")) return;
     ev.currentTarget.closest("details").open = false;
     run(ev.currentTarget, async () => {
-      const data = await api("/api/today/release", { method: "POST" });
+      const data = await api(`${API}/today/release`, { method: "POST" });
       showMessage(`${data.released} 件を未着手に戻しました。`);
       state.history = [];
       await load();
@@ -485,7 +493,7 @@
     const seq = markSeq;
     let data;
     try {
-      data = await api("/api/today");
+      data = await api(`${API}/today`);
     } catch {
       return; // 一時的な失敗は次回の再取得に任せる
     }

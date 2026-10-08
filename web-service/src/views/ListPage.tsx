@@ -1,3 +1,4 @@
+import type { PlatformConfig } from "../domain/platform";
 import { Layout } from "./Layout";
 import { listHref, type ListQuery, type ListTab } from "./links";
 import { ShopList, type ShopListProps } from "./list/ShopList";
@@ -10,6 +11,7 @@ export interface PrefectureOption {
 }
 
 interface CommonProps {
+  platform: PlatformConfig;
   tabCounts: Record<ListTab, number>;
   prefectures: readonly PrefectureOption[];
 }
@@ -32,7 +34,7 @@ const PLACEHOLDER: Record<ListTab, string> = {
 function SearchForm({ query, prefectures }: { query: ListQuery; prefectures: readonly PrefectureOption[] }) {
   const filtered = Boolean(query.q || query.prefecture || query.shop || query.status);
   return (
-    <form class="search" method="get" action="/list" role="search">
+    <form class="search" method="get" action={`${query.base ?? ""}/list`} role="search">
       <input type="hidden" name="tab" value={query.tab} />
       {query.status ? <input type="hidden" name="status" value={query.status} /> : null}
       {query.shop ? <input type="hidden" name="shop" value={query.shop} /> : null}
@@ -49,7 +51,7 @@ function SearchForm({ query, prefectures }: { query: ListQuery; prefectures: rea
         検索
       </button>
       {filtered ? (
-        <a class="btn btn-ghost" href={listHref({ tab: query.tab })}>
+        <a class="btn btn-ghost" href={listHref({ base: query.base, tab: query.tab })}>
           条件をクリア
         </a>
       ) : null}
@@ -60,28 +62,28 @@ function SearchForm({ query, prefectures }: { query: ListQuery; prefectures: rea
 export function ListPage(props: ListPageProps) {
   const query = props.list.query;
   return (
-    <Layout title="名簿" active="list">
+    <Layout title="名簿" platform={props.platform} active="list">
       <h1>名簿</h1>
       <nav class="tabs" aria-label="名簿の種類">
         {TABS.map(({ tab, label }) => (
-          <a href={listHref({ tab })} aria-current={tab === query.tab ? "page" : undefined}>
+          <a href={listHref({ base: query.base, tab })} aria-current={tab === query.tab ? "page" : undefined}>
             {label} <span class="chip-count">{props.tabCounts[tab].toLocaleString("ja-JP")}</span>
           </a>
         ))}
       </nav>
       {query.tab === "shop" ? (
-        <p class="muted">5人以上が同じXを載せていたアカウント（店舗・グループ垢の可能性）。通常はフォローせず、非公開リストで見るだけにします。</p>
+        <p class="muted">5人以上が同じ{props.platform.label}を載せていたアカウント（店舗・グループ垢の可能性）。通常はフォローせず、非公開リストで見るだけにします。</p>
       ) : null}
       {query.shop ? (
         <p class="filter-note">
-          店舗「{query.shop}」の人だけを表示しています。 <a href={listHref({ tab: query.tab })}>解除</a>
+          店舗「{query.shop}」の人だけを表示しています。 <a href={listHref({ base: query.base, tab: query.tab })}>解除</a>
         </p>
       ) : null}
       <SearchForm query={query} prefectures={props.prefectures} />
       {props.view === "shops" ? (
         props.tabCounts.shops === 0 ? (
           <p class="empty">
-            店舗一覧はまだありません。<a href="/admin#data">管理 → データ更新</a> で pokepara_all_shops.csv を取り込んでください。
+            店舗一覧はまだありません。<a href={`${query.base ?? ""}/admin#data`}>管理 → データ更新</a> で pokepara_all_shops.csv を取り込んでください。
           </p>
         ) : (
           <ShopList {...props.list} />

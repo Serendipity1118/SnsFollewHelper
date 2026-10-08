@@ -1,4 +1,4 @@
-// X のページで動く。プロフィールを読み取って判定し、結果を service worker へ渡す（タブを閉じるのは service worker）。
+// X / Instagram のページで動く。プロフィールを読み取って判定し、結果を service worker へ渡す（タブを閉じるのは service worker）。
 // 重要: フォローボタンを押す・クリックイベントを送る処理は書かない。人のクリックを「聞く」だけ。
 (() => {
   "use strict";
@@ -10,7 +10,11 @@
   const TOAST_MS = 8000;
   const DECISIVE = new Set(["not_found", "suspended", "followed", "pending"]);
   const FOLLOWING = new Set(["followed", "pending"]);
-  const FOLLOW_BUTTON_TESTID = /-follow$/;
+  // X はボタンの data-testid が、Instagram はボタンの文字が切り替わる
+  const OBSERVE = {
+    x: { childList: true, subtree: true, attributes: true, attributeFilter: ["data-testid"] },
+    instagram: { childList: true, subtree: true, characterData: true },
+  };
   // このタブで人がフォローを押した印。記録に失敗して再読み込みしたときに「既フォロー」ではなく「済」で送り直すため。
   const clickedKey = (handle) => `followHelper:clicked:${handle}`;
 
@@ -50,7 +54,7 @@
     current.observer.disconnect();
     let result;
     try {
-      result = await chrome.runtime.sendMessage({ type: "report", handle: current.handle, kind });
+      result = await chrome.runtime.sendMessage({ type: "report", platform: current.platform, handle: current.handle, kind });
     } catch {
       result = { close: false, error: "拡張機能を再読み込みしてください。" };
     }
@@ -83,7 +87,7 @@
     clearTimeout(current.closeTimer);
     current.closeTimer = setTimeout(() => {
       if (session !== current || !settings.enabled) return;
-      if (expected.has(H.detectProfile(document, current.handle))) report(kind);
+      if (expected.has(H.detect(document, current.platform, current.handle))) report(kind);
     }, delayMs);
   }
 
@@ -101,7 +105,7 @@
   function check() {
     const current = session;
     if (!current || current.reported || !settings.enabled) return;
-    const state = H.detectProfile(document, current.handle);
+    const state = H.detect(document, current.platform, current.handle);
     if (current.awaitingFollow) {
       if (FOLLOWING.has(state)) {
         current.awaitingFollow = false;
@@ -123,11 +127,11 @@
     session.debounce = setTimeout(check, DEBOUNCE_MS);
   }
 
-  function startSession(handle) {
+  function startSession({ platform, handle }) {
     endSession();
     const observer = new MutationObserver(scheduleCheck);
-    session = { handle, observer, reported: false, decided: false, awaitingFollow: false };
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-testid"] });
+    session = { platform, handle, observer, reported: false, decided: false, awaitingFollow: false };
+    observer.observe(document.body, OBSERVE[platform]);
     // 読み込みが終わらないページ（エラー表示など）は判定をあきらめて残す
     const current = session;
     current.detectTimer = setTimeout(() => (current.decided = true), DETECT_TIMEOUT_MS);
@@ -135,9 +139,9 @@
   }
 
   function onUrlMaybeChanged() {
-    const handle = settings.enabled ? H.profileHandle(location.href) : null;
-    if (handle === (session?.handle ?? null)) return;
-    if (handle) startSession(handle);
+    const target = settings.enabled ? H.profileTarget(location.href) : null;
+    if (target?.handle === session?.handle && target?.platform === session?.platform) return;
+    if (target) startSession(target);
     else endSession();
   }
 
@@ -148,9 +152,7 @@
     (ev) => {
       const current = session;
       if (!current || current.reported || !settings.enabled || !(ev.target instanceof Element)) return;
-      const clicked = ev.target.closest("[data-testid]");
-      if (!clicked || !FOLLOW_BUTTON_TESTID.test(clicked.getAttribute("data-testid"))) return;
-      if (clicked !== H.profileFollowButton(document, current.handle)) return; // おすすめ欄などのフォローは対象外
+      if (!H.isFollowClick(document, current.platform, current.handle, ev.target)) return; // おすすめ欄などは対象外
       rememberClick(current.handle);
       // 表示が「フォロー中」に変わるまで待つ（回線が遅くても取りこぼさないよう、期限は設けない）
       current.awaitingFollow = true;
@@ -166,7 +168,7 @@
     else onUrlMaybeChanged();
   });
 
-  // X は画面遷移でページを読み直さないので、URL の変化を見て判定し直す
+  // X も Instagram も画面遷移でページを読み直さないので、URL の変化を見て判定し直す
   setInterval(onUrlMaybeChanged, URL_CHECK_MS);
 
   H.loadSettings()

@@ -19,7 +19,7 @@ function ExternalLink({ href, label }: { href: string | undefined; label: string
   ) : null;
 }
 
-function ShopRow({ shop }: { shop: ShopWithQueue }) {
+function ShopRow({ shop, base }: { shop: ShopWithQueue; base: string | undefined }) {
   return (
     <tr>
       <td>
@@ -44,7 +44,7 @@ function ShopRow({ shop }: { shop: ShopWithQueue }) {
       </td>
       <td class="num">
         {shop.queueTotal ? (
-          <a href={listHref({ tab: "personal", prefecture: shop.prefecture, shop: shop.name })}>
+          <a href={listHref({ base, tab: "personal", prefecture: shop.prefecture, shop: shop.name })}>
             {shop.queueTotal}人
             <div class="muted">
               未着手{shop.queuePending}・フォロー{shop.queueDone}
@@ -76,7 +76,7 @@ export function ShopList({ query, items, total, page, pageSize }: ShopListProps)
             </thead>
             <tbody>
               {items.map((shop) => (
-                <ShopRow shop={shop} />
+                <ShopRow shop={shop} base={query.base} />
               ))}
             </tbody>
           </table>

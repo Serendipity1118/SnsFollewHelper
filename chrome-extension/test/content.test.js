@@ -71,21 +71,21 @@ describe("content script", () => {
     expect(sendMessage).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(300);
-    expect(sendMessage).toHaveBeenCalledWith({ type: "report", handle: "alice", kind: "followed" });
+    expect(sendMessage).toHaveBeenCalledWith({ type: "report", platform: "x", handle: "alice", kind: "followed" });
   });
 
   test("reports accounts that do not exist after the auto-close delay", async () => {
     await visit("carol", '<div data-testid="emptyState">このアカウントは存在しません</div>');
     expect(sendMessage).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(AUTO_CLOSE_DELAY_MS);
-    expect(sendMessage).toHaveBeenCalledWith({ type: "report", handle: "carol", kind: "not_found" });
+    expect(sendMessage).toHaveBeenCalledWith({ type: "report", platform: "x", handle: "carol", kind: "not_found" });
   });
 
   test("reports suspended accounts after the auto-close delay", async () => {
     await visit("hana", '<div data-testid="emptyState">アカウントは凍結されています</div>');
     expect(sendMessage).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(AUTO_CLOSE_DELAY_MS);
-    expect(sendMessage).toHaveBeenCalledWith({ type: "report", handle: "hana", kind: "suspended" });
+    expect(sendMessage).toHaveBeenCalledWith({ type: "report", platform: "x", handle: "hana", kind: "suspended" });
   });
 
   test("keeps an already-followed tab when the person unfollows during the auto-close delay", async () => {
@@ -99,7 +99,7 @@ describe("content script", () => {
     storageListener({ autoCloseDelayMs: { newValue: 3000 } }, "local");
     await visit("jack", header("1-unfollow", "jack"));
     await vi.advanceTimersByTimeAsync(3000);
-    expect(sendMessage).toHaveBeenCalledWith({ type: "report", handle: "jack", kind: "followed" });
+    expect(sendMessage).toHaveBeenCalledWith({ type: "report", platform: "x", handle: "jack", kind: "followed" });
     storageListener({ autoCloseDelayMs: { newValue: AUTO_CLOSE_DELAY_MS } }, "local");
   });
 
@@ -119,7 +119,7 @@ describe("content script", () => {
     expect(sendMessage).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(300);
-    expect(sendMessage).toHaveBeenCalledWith({ type: "report", handle: "bob", kind: "followed_now" });
+    expect(sendMessage).toHaveBeenCalledWith({ type: "report", platform: "x", handle: "bob", kind: "followed_now" });
   });
 
   test("still reports when X takes a long time to show the follow", async () => {
@@ -128,7 +128,7 @@ describe("content script", () => {
     await vi.advanceTimersByTimeAsync(15_000);
     document.querySelector('[data-testid="1-follow"]').setAttribute("data-testid", "1-unfollow");
     await vi.advanceTimersByTimeAsync(CLOSE_DELAY_MS + DETECT_WAIT_MS + 100);
-    expect(sendMessage).toHaveBeenCalledWith({ type: "report", handle: "gina", kind: "followed_now" });
+    expect(sendMessage).toHaveBeenCalledWith({ type: "report", platform: "x", handle: "gina", kind: "followed_now" });
   });
 
   test("does not report when the person unfollows again during the delay", async () => {

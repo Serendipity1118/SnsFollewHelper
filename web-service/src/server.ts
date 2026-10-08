@@ -24,12 +24,13 @@ const { path: dbPath, source: dbSource } = resolveDbPath();
 const db = openDatabase(dbPath);
 const app = createApp({
   service: createQueueService(db),
+  instagramService: createQueueService(db, undefined, "instagram"),
   allowedHosts: [`${HOSTNAME}:${port}`, `localhost:${port}`],
   extensionOrigins: [extensionOrigin(process.env.EXTENSION_ID)],
 });
 
 const server = serve({ fetch: app.fetch, port, hostname: HOSTNAME }, (info) => {
-  console.info(`Xフォロー優先キュー: http://${HOSTNAME}:${info.port}  (DB: ${dbPath} [${dbSource}])`);
+  console.info(`フォロー優先キュー（X / Instagram）: http://${HOSTNAME}:${info.port}  (DB: ${dbPath} [${dbSource}])`);
 });
 
 function shutdown() {

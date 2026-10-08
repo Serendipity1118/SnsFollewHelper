@@ -15,12 +15,13 @@ async function updateBadge() {
 async function handleReport(message, sender) {
   const tabId = sender.tab?.id;
   const status = H.STATUS_FOR[message.kind];
-  if (tabId === undefined || !status || !H.isReportableHandle(message.handle)) {
+  const platform = message.platform ?? "x";
+  if (tabId === undefined || !status || !H.isReportableHandle(message.handle) || !H.isReportablePlatform(platform)) {
     return { close: false, error: "不正な判定結果です。" };
   }
   const settings = await H.loadSettings();
   if (!settings.enabled) return { close: false, error: null };
-  const result = await H.reportResult(fetch, settings.serverUrl, message.handle, status);
+  const result = await H.reportResult(fetch, settings.serverUrl, message.handle, status, platform);
   if (result.close) await chrome.tabs.remove(tabId);
   return result;
 }

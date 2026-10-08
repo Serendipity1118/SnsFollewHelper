@@ -12,8 +12,6 @@ const markSchema = z.object({ status: z.string().min(1) });
 const settingsPatchSchema = settingsSchema.partial().strict();
 const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
-const EXPORT_NAMES = { personal: "x_follow_queue.csv", shop: "x_follow_shop_candidates.csv" } as const;
-
 async function readJson(c: Context): Promise<unknown> {
   try {
     return await c.req.json();
@@ -38,6 +36,7 @@ function csvResponse(c: Context, filename: string, body: string) {
 
 export function apiRoutes(service: QueueService): Hono {
   const api = new Hono();
+  const names = service.platform.exportNames;
 
   // JSON を受ける更新系は小さい本文だけを受け付ける（CSV取込は /import/* で別上限）
   for (const path of ["/targets/*", "/settings"]) {
@@ -96,16 +95,20 @@ export function apiRoutes(service: QueueService): Hono {
   api.get("/export/queue.csv", (c) => {
     const kind = kindSchema.safeParse(c.req.query("kind") ?? "personal");
     if (!kind.success) throw new BadRequest("kind は personal か shop を指定してください");
-    return csvResponse(c, EXPORT_NAMES[kind.data], service.exportQueue(kind.data));
+    return csvResponse(c, names[kind.data], service.exportQueue(kind.data));
   });
   api.get("/export/results.csv", (c) => {
     const raw = c.req.query("date");
     if (raw === undefined || raw === "") {
-      return csvResponse(c, "follow_results_all.csv", service.exportResults());
+      return csvResponse(c, `${names.resultsPrefix}_all.csv`, service.exportResults());
     }
     const date = isoDateSchema.safeParse(raw);
     if (!date.success) throw new BadRequest("date は YYYY-MM-DD で指定してください");
-    return csvResponse(c, `follow_results_${date.data.replaceAll("-", "")}.csv`, service.exportResults(date.data));
+    return csvResponse(
+      c,
+      `${names.resultsPrefix}_${date.data.replaceAll("-", "")}.csv`,
+      service.exportResults(date.data),
+    );
   });
 
   return api;

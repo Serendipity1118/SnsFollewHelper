@@ -1,4 +1,5 @@
 import { PREF_RANK, PREF_RANK_DEFAULT, STATUS_DONE, STATUS_PENDING } from "../domain/constants";
+import type { Platform } from "../domain/platform";
 import type { Shop } from "../domain/shopRows";
 import type { Db } from "./database";
 
@@ -21,7 +22,7 @@ const SELECT = `SELECT s.shop_url AS shopUrl, s.prefecture, s.name, s.kana, s.ar
   LEFT JOIN (
     SELECT prefecture, shop, COUNT(*) AS total,
       SUM(status = @pending) AS pending, SUM(status = @done) AS done
-    FROM targets WHERE kind = 'personal' GROUP BY prefecture, shop
+    FROM targets WHERE platform = @platform AND kind = 'personal' GROUP BY prefecture, shop
   ) t ON t.prefecture = s.prefecture AND t.shop = s.name`;
 
 // 都道府県の並びはキューと同じ PREF_RANK。値はすべてバインド変数で渡す。
@@ -56,7 +57,8 @@ function whereClause(filter: ShopFilter): { sql: string; params: Record<string, 
   return { sql: conds.length ? `WHERE ${conds.join(" AND ")}` : "", params };
 }
 
-export function createShopRepository(db: Db) {
+/** 店舗一覧は X / Instagram 共通。件数の集計だけ platform の名簿を数える。 */
+export function createShopRepository(db: Db, platform: Platform = "x") {
   const insert = db.prepare(`INSERT INTO shops
     (shop_url, prefecture, name, kana, area, category, address, phone, official_url, email,
      instagram, x_url, tiktok, line, youtube, updated_at)
@@ -77,6 +79,7 @@ export function createShopRepository(db: Db) {
         .all({
           ...where.params,
           ...RANK_PARAMS,
+          platform,
           pending: STATUS_PENDING,
           done: STATUS_DONE,
           limit,

@@ -1,12 +1,13 @@
 import { STATUS_DONE } from "../domain/constants";
+import type { Platform } from "../domain/platform";
 import type { Db } from "./database";
 
-export function createActionLogRepository(db: Db) {
+export function createActionLogRepository(db: Db, platform: Platform = "x") {
   return {
     record(handle: string, statusBefore: string, statusAfter: string, occurredAt: number): void {
       db.prepare(
-        "INSERT INTO action_logs (handle, status_before, status_after, occurred_at) VALUES (?, ?, ?, ?)",
-      ).run(handle, statusBefore, statusAfter, occurredAt);
+        "INSERT INTO action_logs (platform, handle, status_before, status_after, occurred_at) VALUES (?, ?, ?, ?, ?)",
+      ).run(platform, handle, statusBefore, statusAfter, occurredAt);
     },
 
     /**
@@ -17,11 +18,11 @@ export function createActionLogRepository(db: Db) {
       return db
         .prepare(
           `SELECT MIN(occurred_at) AS first_done FROM action_logs
-           WHERE status_after = ? AND status_before <> ?
+           WHERE platform = ? AND status_after = ? AND status_before <> ?
            GROUP BY handle HAVING first_done > ?`,
         )
         .pluck()
-        .all(STATUS_DONE, STATUS_DONE, since) as number[];
+        .all(platform, STATUS_DONE, STATUS_DONE, since) as number[];
     },
   };
 }

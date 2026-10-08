@@ -7,6 +7,8 @@ export function safeHttpUrl(raw: string | null | undefined): string | undefined 
 export type ListTab = "personal" | "shop" | "shops";
 
 export interface ListQuery {
+  /** 画面のURLの前置き（X は ""、Instagram は "/ig"） */
+  base?: string;
   tab: ListTab;
   status?: string;
   prefecture?: string;
@@ -25,5 +27,5 @@ export function listHref(params: ListQuery): string {
   if (params.status) query.set("status", params.status);
   if (params.page && params.page > 1) query.set("page", String(params.page));
   if (params.size) query.set("size", String(params.size));
-  return `/list?${query.toString()}`;
+  return `${params.base ?? ""}/list?${query.toString()}`;
 }

@@ -101,6 +101,12 @@ describe("schema migration", () => {
     const v1 = new Database(path);
     v1.exec(SCHEMA_V1);
     v1.prepare("INSERT INTO settings (key, value) VALUES ('dailyLimit', '33')").run();
+    v1.prepare(
+      "INSERT INTO targets (handle, kind, priority, status, done_date, updated_at) VALUES ('alice', 'personal', 1, '済', '2026-09-01', 0)",
+    ).run();
+    v1.prepare(
+      "INSERT INTO action_logs (handle, status_before, status_after, occurred_at) VALUES ('alice', '当日', '済', 1)",
+    ).run();
     v1.pragma("user_version = 1");
     v1.close();
 
@@ -108,7 +114,11 @@ describe("schema migration", () => {
     const service = createQueueService(db);
     expect(service.settings().dailyLimit).toBe(33);
     expect(service.importShops(fixture("shops.csv")).imported).toBe(4);
-    expect(db.pragma("user_version", { simple: true })).toBe(2);
+    expect(db.pragma("user_version", { simple: true })).toBe(3);
+    // v3: 既存の名簿と履歴は X のものとして残る
+    expect(service.counts().personal).toEqual({ 済: 1 });
+    expect(createQueueService(db, undefined, "instagram").counts().personal).toEqual({});
+    expect(db.prepare("SELECT platform FROM action_logs").pluck().all()).toEqual(["x"]);
     db.close();
   });
 });

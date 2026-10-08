@@ -1,9 +1,19 @@
+import type { PlatformConfig } from "../domain/platform";
 import { Layout } from "./Layout";
 
 /** 今日のフォロー。指標と一覧は today.js が /api/today から描画する。 */
-export function TodayPage() {
+export function TodayPage({ platform }: { platform: PlatformConfig }) {
+  const label = platform.label;
   return (
-    <Layout title="今日のフォロー" active="today" scripts={["/static/today.js"]}>
+    <Layout title="今日のフォロー" platform={platform} active="today" scripts={["/static/today.js"]}>
+      <div
+        id="today"
+        hidden
+        data-api-base={platform.apiBase}
+        data-base-path={platform.basePath}
+        data-label={label}
+        data-platform={platform.id}
+      ></div>
       <section class="stats" id="stats" aria-label="進み具合"></section>
 
       <div id="quotaAlert" class="alert alert-danger" role="status" hidden>
@@ -20,8 +30,8 @@ export function TodayPage() {
               今日の名簿 <span id="date" class="muted"></span>
             </h1>
             <p class="steps">
-              <span>① Xで開く</span>
-              <span>② 生きている個人垢なら X でフォロー</span>
+              <span>① {label}で開く</span>
+              <span>② 生きている個人垢なら {label} でフォロー</span>
               <span>③ 結果を押す（次の人へ進みます）</span>
             </p>
           </div>
@@ -46,7 +56,7 @@ export function TodayPage() {
         <div id="list" class="rows"></div>
 
         <p class="keys muted">
-          キー操作: <kbd>J</kbd>/<kbd>K</kbd> 移動・<kbd>O</kbd> Xで開く・<kbd>1</kbd> フォローした・<kbd>2</kbd> 見送る・
+          キー操作: <kbd>J</kbd>/<kbd>K</kbd> 移動・<kbd>O</kbd> {label}で開く・<kbd>1</kbd> フォローした・<kbd>2</kbd> 見送る・
           <kbd>3</kbd> 死垢・<kbd>U</kbd> 取り消す
         </p>
       </section>

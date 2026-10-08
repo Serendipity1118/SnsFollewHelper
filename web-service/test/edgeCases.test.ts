@@ -5,6 +5,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { createApp } from "../src/app";
 import { CsvFormatError, parseCsv, requireColumns } from "../src/csv/parse";
 import { openDatabase } from "../src/db/database";
+import { PLATFORMS } from "../src/domain/platform";
 import { queueItemFromCsv } from "../src/domain/queueRows";
 import type { QueueService } from "../src/services/queueService";
 import { createQueueService } from "../src/services/queueService";
@@ -64,6 +65,7 @@ describe("database file", () => {
 describe("error handling", () => {
   test("returns a generic 500 and logs unexpected errors", async () => {
     const failing = {
+      platform: PLATFORMS.x,
       today: () => {
         throw new Error("boom");
       },

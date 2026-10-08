@@ -196,3 +196,38 @@ test("名簿: タブ・検索・状態で絞り込める", async ({ page }) => {
   await page.getByRole("link", { name: /店舗垢候補/ }).first().click();
   await expect(page.locator("tbody tr")).toHaveCount(1);
 });
+
+test("Instagramフォロー: タブで切り替え、取込から結果の記録まで X と別に回せる", async ({ page }) => {
+  const igCsv = fileURLToPath(new URL("../fixtures/casts_instagram.csv", import.meta.url));
+  const platformTabs = page.getByRole("navigation", { name: "SNSの切り替え" });
+  await page.goto("/");
+  await expect(platformTabs.getByRole("link", { name: "Xフォロー" })).toHaveAttribute("aria-current", "page");
+  await platformTabs.getByRole("link", { name: "Instagramフォロー" }).click();
+  await expect(page).toHaveURL(/\/ig$/);
+  await expect(platformTabs.getByRole("link", { name: "Instagramフォロー" })).toHaveAttribute("aria-current", "page");
+
+  await page.getByRole("navigation", { name: "メイン" }).getByRole("link", { name: "管理" }).click();
+  await expect(page).toHaveURL(/\/ig\/admin$/);
+  const castsForm = page.locator('form[data-api="/api/ig/import/casts"]');
+  await castsForm.locator('input[type="file"]').setInputFiles(igCsv);
+  await castsForm.getByRole("button", { name: "取り込む" }).click();
+  await expect(castsForm.locator("[data-result]")).toContainText("個人 4 人");
+  await expect(castsForm.locator("[data-result]")).toContainText("Instagram欄が使えず除いた行: 3");
+
+  await page.getByRole("navigation", { name: "メイン" }).getByRole("link", { name: "今日のフォロー" }).click();
+  await page.getByRole("button", { name: /件を出す/ }).click();
+  const first = pendingRows(page).first();
+  const opener = first.getByRole("link", { name: "Instagramで開く" });
+  await expect(opener).toHaveAttribute("href", /^\/ig\/go\//);
+  const handle = (await first.getAttribute("data-handle"))!;
+  await first.getByRole("button", { name: "フォローした" }).click();
+  await expect(page.locator("#toast")).toContainText("をフォロー済みにしました");
+
+  await page.goto(`/ig/list?q=${encodeURIComponent(handle)}`);
+  await expect(page.locator("tbody")).toContainText("フォローした");
+  // X 側の名簿には出ない
+  await platformTabs.getByRole("link", { name: "Xフォロー" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto(`/list?q=${encodeURIComponent(handle)}`);
+  await expect(page.locator("tbody")).not.toContainText("フォローした");
+});

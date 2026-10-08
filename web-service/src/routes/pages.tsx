@@ -41,6 +41,8 @@ function formatTime(epochMs: number): string {
 const sum = (counts: Record<string, number>) => Object.values(counts).reduce((total, n) => total + n, 0);
 
 function renderList(c: Context, service: QueueService) {
+  const platform = service.platform;
+  const base = platform.basePath || undefined;
   const q = listQuerySchema.parse(c.req.query());
   const size = q.size === DEFAULT_PAGE_SIZE ? undefined : q.size;
   const counts = service.counts();
@@ -52,19 +54,20 @@ function renderList(c: Context, service: QueueService) {
   };
 
   if (q.tab === "shops") {
-    const query = { tab: q.tab, prefecture: q.pref, q: q.q, size };
+    const query = { base, tab: q.tab, prefecture: q.pref, q: q.q, size };
     const result = service.listShops({ prefecture: q.pref, q: q.q, page: q.page, pageSize: q.size });
     const prefectures = shopPrefectures.map((p) => ({ ...p, label: prefectureLabel(p.prefecture) }));
-    return render(c, <ListPage view="shops" tabCounts={tabCounts} prefectures={prefectures} list={{ query, ...result }} />);
+    return render(c, <ListPage view="shops" platform={platform} tabCounts={tabCounts} prefectures={prefectures} list={{ query, ...result }} />);
   }
 
   const kind = q.tab;
-  const query = { tab: kind, status: q.status, prefecture: q.pref, shop: q.shop, q: q.q, size };
+  const query = { base, tab: kind, status: q.status, prefecture: q.pref, shop: q.shop, q: q.q, size };
   const result = service.list({ kind, status: q.status, prefecture: q.pref, shop: q.shop, q: q.q, page: q.page, pageSize: q.size });
   return render(
     c,
     <ListPage
       view="targets"
+      platform={platform}
       tabCounts={tabCounts}
       prefectures={service.targetPrefectures(kind)}
       list={{ query, statusCounts: counts[kind], ...result }}
@@ -73,41 +76,43 @@ function renderList(c: Context, service: QueueService) {
 }
 
 /** 旧URL（/queue, /shops, /import, /settings）から新しい画面へ。ブックマークを壊さない。 */
-function legacyRedirects(pages: Hono) {
+function legacyRedirects(pages: Hono, base: string) {
   pages.get("/queue", (c) => {
     const q = c.req.query();
     const tab: ListTab = q.kind === "shop" ? "shop" : "personal";
-    return c.redirect(listHref({ tab, status: q.status, prefecture: q.pref, shop: q.shop }), 301);
+    return c.redirect(listHref({ base, tab, status: q.status, prefecture: q.pref, shop: q.shop }), 301);
   });
   pages.get("/shops", (c) => {
     const q = c.req.query();
-    return c.redirect(listHref({ tab: "shops", prefecture: q.pref, q: q.q }), 301);
+    return c.redirect(listHref({ base, tab: "shops", prefecture: q.pref, q: q.q }), 301);
   });
-  pages.get("/import", (c) => c.redirect("/admin#data", 301));
-  pages.get("/settings", (c) => c.redirect("/admin#settings", 301));
+  pages.get("/import", (c) => c.redirect(`${base}/admin#data`, 301));
+  pages.get("/settings", (c) => c.redirect(`${base}/admin#settings`, 301));
 }
 
 export function pageRoutes(service: QueueService): Hono {
   const pages = new Hono();
+  const platform = service.platform;
 
-  pages.get("/", (c) => render(c, <TodayPage />));
+  pages.get("/", (c) => render(c, <TodayPage platform={platform} />));
   pages.get("/list", (c) => renderList(c, service));
   pages.get("/admin", (c) =>
-    render(c, <AdminPage settings={service.settings()} firstFollowDate={service.summary().firstFollowDate} />),
+    render(c, <AdminPage platform={platform} settings={service.settings()} firstFollowDate={service.summary().firstFollowDate} />),
   );
-  legacyRedirects(pages);
+  legacyRedirects(pages, platform.basePath);
 
-  /** プロフィールを開く入口。上限に達していたら x.com へは飛ばさない。 */
+  /** プロフィールを開く入口。上限に達していたら x.com / instagram.com へは飛ばさない。 */
   pages.get("/go/:handle", (c) => {
     const result = service.canOpen(c.req.param("handle").trim().toLowerCase());
     if (result.ok) return c.redirect(result.url, 302);
     if (result.reason === "unknown") {
-      return render(c, <MessagePage title="見つかりません" message="このhandleは名簿にありません。" />, 404);
+      return render(c, <MessagePage platform={platform} title="見つかりません" message="このhandleは名簿にありません。" />, 404);
     }
     const retry = result.quota.retryAt ? `${formatTime(result.quota.retryAt)} 以降に再開できます。` : "";
     return render(
       c,
       <MessagePage
+        platform={platform}
         title="フォロー上限に達しました"
         message={`直近1時間 ${result.quota.followed1h} 件 / 24時間 ${result.quota.followed24h} 件。上限に達したので新しいプロフィールは開きません。${retry}`}
       />,

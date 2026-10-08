@@ -1,5 +1,6 @@
 import type { QueueItem } from "../domain/buildQueue";
 import { STATUS_ASSIGNED, STATUS_DONE, STATUS_PENDING, WRITABLE_STATUSES, type TargetKind } from "../domain/constants";
+import type { Platform } from "../domain/platform";
 import type { Db } from "./database";
 
 export interface Target extends QueueItem {
@@ -27,13 +28,14 @@ const SELECT = `SELECT handle, kind, priority, prefecture, shop, cast_name AS ca
 const WRITABLE = [...WRITABLE_STATUSES];
 const WRITABLE_PLACEHOLDERS = WRITABLE.map(() => "?").join(", ");
 
-export function createTargetRepository(db: Db) {
+/** 1つのプラットフォーム（X / Instagram）の名簿だけを読み書きする。 */
+export function createTargetRepository(db: Db, platform: Platform = "x") {
   const upsert = db.prepare(`INSERT INTO targets
-    (handle, kind, priority, prefecture, shop, cast_name, profile_url, occurrences, last_updated,
+    (platform, handle, kind, priority, prefecture, shop, cast_name, profile_url, occurrences, last_updated,
      status, done_date, assigned_at, updated_at)
-    VALUES (@handle, @kind, @priority, @prefecture, @shop, @castName, @profileUrl, @occurrences,
+    VALUES (@platform, @handle, @kind, @priority, @prefecture, @shop, @castName, @profileUrl, @occurrences,
      @lastUpdated, @status, @doneDate, @assignedAt, @updatedAt)
-    ON CONFLICT(handle) DO UPDATE SET kind = excluded.kind, priority = excluded.priority,
+    ON CONFLICT(platform, handle) DO UPDATE SET kind = excluded.kind, priority = excluded.priority,
      prefecture = excluded.prefecture, shop = excluded.shop, cast_name = excluded.cast_name,
      profile_url = excluded.profile_url, occurrences = excluded.occurrences,
      last_updated = excluded.last_updated, status = excluded.status, done_date = excluded.done_date,
@@ -41,23 +43,23 @@ export function createTargetRepository(db: Db) {
 
   const insertAll = (items: readonly NewTarget[], now: number) => {
     for (const item of items) {
-      upsert.run({ ...item, assignedAt: item.assignedAt ?? null, updatedAt: now });
+      upsert.run({ ...item, platform, assignedAt: item.assignedAt ?? null, updatedAt: now });
     }
   };
 
   return {
     findByHandle(handle: string): Target | undefined {
-      return db.prepare(`${SELECT} WHERE handle = ?`).get(handle) as Target | undefined;
+      return db.prepare(`${SELECT} WHERE platform = ? AND handle = ?`).get(platform, handle) as Target | undefined;
     },
 
     byKind(kind: TargetKind): Target[] {
-      return db.prepare(`${SELECT} WHERE kind = ? ORDER BY priority, handle`).all(kind) as Target[];
+      return db.prepare(`${SELECT} WHERE platform = ? AND kind = ? ORDER BY priority, handle`).all(platform, kind) as Target[];
     },
 
     /** 指定した種類の行をすべて入れ替える。 */
     replaceKinds: db.transaction((kinds: readonly TargetKind[], items: readonly NewTarget[], now: number) => {
-      const remove = db.prepare("DELETE FROM targets WHERE kind = ?");
-      for (const kind of kinds) remove.run(kind);
+      const remove = db.prepare("DELETE FROM targets WHERE platform = ? AND kind = ?");
+      for (const kind of kinds) remove.run(platform, kind);
       insertAll(items, now);
     }),
 
@@ -65,16 +67,16 @@ export function createTargetRepository(db: Db) {
     applyResult(handle: string, status: string, doneDate: string, now: number): boolean {
       const info = db
         .prepare(
-          "UPDATE targets SET status = ?, done_date = ?, updated_at = ? WHERE handle = ? AND kind = 'personal'",
+          "UPDATE targets SET status = ?, done_date = ?, updated_at = ? WHERE platform = ? AND handle = ? AND kind = 'personal'",
         )
-        .run(status, doneDate, now, handle);
+        .run(status, doneDate, now, platform, handle);
       return info.changes > 0;
     },
 
     updateStatus(handle: string, status: string, doneDate: string, assignedAt: number | null, now: number): void {
       db.prepare(
-        "UPDATE targets SET status = ?, done_date = ?, assigned_at = ?, updated_at = ? WHERE handle = ?",
-      ).run(status, doneDate, assignedAt, now, handle);
+        "UPDATE targets SET status = ?, done_date = ?, assigned_at = ?, updated_at = ? WHERE platform = ? AND handle = ?",
+      ).run(status, doneDate, assignedAt, now, platform, handle);
     },
 
     /** 「当日」を「未」へ戻す。before を渡すと、それより前に割り当てた行だけを戻す。 */
@@ -83,38 +85,40 @@ export function createTargetRepository(db: Db) {
       const info = db
         .prepare(
           `UPDATE targets SET status = @pending, assigned_at = NULL, updated_at = @now
-           WHERE kind = 'personal' AND status = @assigned${cond}`,
+           WHERE platform = @platform AND kind = 'personal' AND status = @assigned${cond}`,
         )
-        .run({ pending: STATUS_PENDING, assigned: STATUS_ASSIGNED, now, before });
+        .run({ platform, pending: STATUS_PENDING, assigned: STATUS_ASSIGNED, now, before });
       return info.changes;
     },
 
     assignNext: db.transaction((limit: number, now: number): number => {
       const handles = db
-        .prepare("SELECT handle FROM targets WHERE kind = 'personal' AND status = ? ORDER BY priority, handle LIMIT ?")
+        .prepare(
+          "SELECT handle FROM targets WHERE platform = ? AND kind = 'personal' AND status = ? ORDER BY priority, handle LIMIT ?",
+        )
         .pluck()
-        .all(STATUS_PENDING, limit) as string[];
+        .all(platform, STATUS_PENDING, limit) as string[];
       const assign = db.prepare(
-        "UPDATE targets SET status = ?, done_date = '', assigned_at = ?, updated_at = ? WHERE handle = ?",
+        "UPDATE targets SET status = ?, done_date = '', assigned_at = ?, updated_at = ? WHERE platform = ? AND handle = ?",
       );
-      for (const handle of handles) assign.run(STATUS_ASSIGNED, now, now, handle);
+      for (const handle of handles) assign.run(STATUS_ASSIGNED, now, now, platform, handle);
       return handles.length;
     }),
 
     assignedSince(since: number): Target[] {
       return db
-        .prepare(`${SELECT} WHERE kind = 'personal' AND assigned_at >= ? ORDER BY priority, handle`)
-        .all(since) as Target[];
+        .prepare(`${SELECT} WHERE platform = ? AND kind = 'personal' AND assigned_at >= ? ORDER BY priority, handle`)
+        .all(platform, since) as Target[];
     },
 
     counts(): Array<{ kind: TargetKind; status: string; count: number }> {
       return db
-        .prepare("SELECT kind, status, COUNT(*) AS count FROM targets GROUP BY kind, status")
-        .all() as Array<{ kind: TargetKind; status: string; count: number }>;
+        .prepare("SELECT kind, status, COUNT(*) AS count FROM targets WHERE platform = ? GROUP BY kind, status")
+        .all(platform) as Array<{ kind: TargetKind; status: string; count: number }>;
     },
 
     page(filter: TargetFilter, offset: number, limit: number) {
-      const conds = ["kind = @kind"];
+      const conds = ["platform = @platform", "kind = @kind"];
       if (filter.status) conds.push("status = @status");
       if (filter.prefecture) conds.push("prefecture = @prefecture");
       if (filter.shop) conds.push("shop = @shop");
@@ -124,7 +128,7 @@ export function createTargetRepository(db: Db) {
       }
       const where = `WHERE ${conds.join(" AND ")}`;
       const { q: _q, ...rest } = filter;
-      const params = { ...rest, ...(q ? { like: `%${escapeLike(q)}%` } : {}), offset, limit };
+      const params = { ...rest, platform, ...(q ? { like: `%${escapeLike(q)}%` } : {}), offset, limit };
       const total = db.prepare(`SELECT COUNT(*) FROM targets ${where}`).pluck().get(params) as number;
       const items = db
         .prepare(`${SELECT} ${where} ORDER BY priority, handle LIMIT @limit OFFSET @offset`)
@@ -137,28 +141,30 @@ export function createTargetRepository(db: Db) {
       const cond = status ? " AND status = @status" : "";
       return db
         .prepare(
-          `SELECT prefecture, COUNT(*) AS count FROM targets WHERE kind = @kind${cond}
+          `SELECT prefecture, COUNT(*) AS count FROM targets WHERE platform = @platform AND kind = @kind${cond}
            GROUP BY prefecture ORDER BY count DESC, prefecture`,
         )
-        .all({ kind, status }) as Array<{ prefecture: string; count: number }>;
+        .all({ platform, kind, status }) as Array<{ prefecture: string; count: number }>;
     },
 
     /** 最初に「済」にした実施日（YYYY-MM-DD）。まだなければ undefined。 */
     firstDoneDate(): string | undefined {
       const value = db
-        .prepare("SELECT MIN(done_date) FROM targets WHERE kind = 'personal' AND status = ? AND done_date <> ''")
+        .prepare(
+          "SELECT MIN(done_date) FROM targets WHERE platform = ? AND kind = 'personal' AND status = ? AND done_date <> ''",
+        )
         .pluck()
-        .get(STATUS_DONE) as string | null;
+        .get(platform, STATUS_DONE) as string | null;
       return value ?? undefined;
     },
 
     /** 済/既フォロー/スキップ/死垢 の個人キュー。実施日の新しい順。 */
     finished(doneDate?: string): Target[] {
       const dateCond = doneDate ? " AND done_date = ?" : "";
-      const params = doneDate ? [...WRITABLE, doneDate] : WRITABLE;
+      const params = doneDate ? [platform, ...WRITABLE, doneDate] : [platform, ...WRITABLE];
       return db
         .prepare(
-          `${SELECT} WHERE kind = 'personal' AND status IN (${WRITABLE_PLACEHOLDERS})${dateCond}
+          `${SELECT} WHERE platform = ? AND kind = 'personal' AND status IN (${WRITABLE_PLACEHOLDERS})${dateCond}
            ORDER BY done_date DESC, priority, handle`,
         )
         .all(...params) as Target[];

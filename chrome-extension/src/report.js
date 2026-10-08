@@ -12,7 +12,14 @@
   });
 
   const HTTP_NOT_FOUND = 404;
+  /** プラットフォーム → Webサービスの API の前置き（web-service/src/domain/platform.ts の apiBase）。 */
+  const API_BASE = Object.freeze({ x: "/api", instagram: "/api/ig" });
   const MAX_HANDLE_LENGTH = 200;
+
+  /** 結果を送れるプラットフォームか（"toString" などの継承プロパティは不可）。 */
+  function isReportablePlatform(platform) {
+    return typeof platform === "string" && Object.hasOwn(API_BASE, platform);
+  }
 
   /** 名簿の handle として送ってよい値か（1つのパス要素に収まる文字列。送信時は encodeURIComponent する）。 */
   function isReportableHandle(handle) {
@@ -24,11 +31,13 @@
    * @param {string} serverUrl
    * @param {string} handle
    * @param {string} status
+   * @param {"x" | "instagram"} [platform]
    * @returns {Promise<{ close: true, recorded: boolean } | { close: false, error: string }>}
    *   名簿にない handle（404）は記録せずにタブを閉じる。それ以外の失敗はタブを残す。
    */
-  async function reportResult(fetchFn, serverUrl, handle, status) {
-    const url = `${serverUrl}/api/targets/${encodeURIComponent(handle.toLowerCase())}/status`;
+  async function reportResult(fetchFn, serverUrl, handle, status, platform = "x") {
+    if (!isReportablePlatform(platform)) return { close: false, error: "不正な判定結果です。" };
+    const url = `${serverUrl}${API_BASE[platform]}/targets/${encodeURIComponent(handle.toLowerCase())}/status`;
     let res;
     try {
       res = await fetchFn(url, {
@@ -44,5 +53,5 @@
     return { close: false, error: `Webサービスが受け付けませんでした（HTTP ${res.status}）` };
   }
 
-  globalThis.FollowHelper = { ...globalThis.FollowHelper, STATUS_FOR, isReportableHandle, reportResult };
+  globalThis.FollowHelper = { ...globalThis.FollowHelper, API_BASE, STATUS_FOR, isReportableHandle, isReportablePlatform, reportResult };
 })();

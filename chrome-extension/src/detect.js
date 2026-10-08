@@ -1,4 +1,4 @@
-// X のプロフィール画面を読み取って状態を判定する。X の画面構造に依存する処理はこのファイルに集める。
+// X / Instagram のプロフィール画面を読み取って状態を判定する。画面構造に依存する処理はこのファイルに集める。
 // 読み取るだけで、ボタンを押したりイベントを送ったりはしない。
 (() => {
   "use strict";
@@ -59,5 +59,99 @@
     return STATE_BY_SUFFIX[suffix];
   }
 
-  globalThis.FollowHelper = { ...globalThis.FollowHelper, detectProfile, profileFollowButton };
+  // ---- Instagram ----
+  // 2026-10 時点の画面: プロフィールは main > header に h2（ユーザー名）とフォローボタン（<button>のテキストのみ、data-testid なし）。
+  // 存在しないユーザーは header が無く「このページはご利用いただけません。」だけが出る（凍結・削除も同じ表示）。
+
+  const IG_NOT_FOUND_TEXT = /このページはご利用いただけません|Sorry, this page isn[’']t available/i;
+  const IG_STATE_BY_TEXT = new Map([
+    ["フォロー", "unfollowed"],
+    ["フォローバックする", "unfollowed"],
+    ["follow", "unfollowed"],
+    ["follow back", "unfollowed"],
+    ["フォロー中", "followed"],
+    ["following", "followed"],
+    ["リクエスト済み", "pending"],
+    ["requested", "pending"],
+  ]);
+
+  const buttonState = (button) => IG_STATE_BY_TEXT.get(button.textContent.trim().toLowerCase());
+
+  /**
+   * 表示中のプロフィール本人のヘッダー。画面遷移の直後に前の人のヘッダーが残っていても取り違えないよう、
+   * ユーザー名（h1/h2）が handle と一致するものだけを返す。
+   */
+  function instagramProfileHeader(doc, handle) {
+    const target = handle.toLowerCase();
+    return (
+      [...doc.querySelectorAll("main header")].find((header) =>
+        [...header.querySelectorAll("h1, h2")].some((h) => h.textContent.trim().toLowerCase() === target),
+      ) ?? null
+    );
+  }
+
+  /**
+   * プロフィール本人のフォローボタン（フォロー／フォロー中／リクエスト済み）。
+   * ヘッダー内で最初に見つかったもの（「同じようなアカウント」のおすすめはその後ろに並ぶ）。
+   * @param {Document} doc
+   * @param {string} handle
+   * @returns {Element | null}
+   */
+  function instagramFollowButton(doc, handle) {
+    const header = instagramProfileHeader(doc, handle);
+    if (!header) return null;
+    return [...header.querySelectorAll("button")].find((button) => buttonState(button)) ?? null;
+  }
+
+  /**
+   * @param {Document} doc
+   * @param {string} handle
+   * @returns {"not_found" | "followed" | "pending" | "unfollowed" | "unknown"}
+   */
+  function detectInstagramProfile(doc, handle) {
+    const main = doc.querySelector("main");
+    if (!main) return "unknown";
+    const button = instagramFollowButton(doc, handle);
+    if (button) return buttonState(button);
+    if (!main.querySelector("header") && IG_NOT_FOUND_TEXT.test(main.textContent || "")) return "not_found";
+    return "unknown";
+  }
+
+  // ---- プラットフォームの振り分け ----
+
+  /**
+   * @param {Document} doc
+   * @param {"x" | "instagram"} platform
+   * @param {string} handle
+   */
+  function detect(doc, platform, handle) {
+    return platform === "instagram" ? detectInstagramProfile(doc, handle) : detectProfile(doc, handle);
+  }
+
+  /**
+   * 人がクリックした要素が、プロフィール本人の「フォロー」（未フォロー状態のボタン）か。
+   * @param {Document} doc
+   * @param {"x" | "instagram"} platform
+   * @param {string} handle
+   * @param {Element} target クリックされた要素
+   */
+  function isFollowClick(doc, platform, handle, target) {
+    if (platform === "instagram") {
+      const button = target.closest("button");
+      return Boolean(button) && button === instagramFollowButton(doc, handle) && buttonState(button) === "unfollowed";
+    }
+    const clicked = target.closest("[data-testid]");
+    if (!clicked || !/-follow$/.test(clicked.getAttribute("data-testid"))) return false;
+    return clicked === profileFollowButton(doc, handle); // おすすめ欄などのフォローは対象外
+  }
+
+  globalThis.FollowHelper = {
+    ...globalThis.FollowHelper,
+    detect,
+    detectProfile,
+    detectInstagramProfile,
+    isFollowClick,
+    instagramFollowButton,
+    profileFollowButton,
+  };
 })();

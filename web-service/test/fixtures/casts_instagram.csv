@@ -1,0 +1,9 @@
+﻿都道府県,店舗名,エリア,業種,店舗URL,キャスト名,年齢,最終更新日,プロフィールURL,Instagram,X(Twitter),TikTok,その他SNS
+tokyo,ShopA,新宿,キャバクラ,https://shop.example/a,あい,20,2026/09/01,https://cast.example/p/1,https://www.instagram.com/Ai.Chan_1/,https://x.com/alice_1,,
+tokyo,ShopA,新宿,キャバクラ,https://shop.example/a,あい2,21,2026/08/01,https://cast.example/p/2,https://instagram.com/ai.chan_1?igsh=abc,,,
+osaka,ShopB,北新地,ラウンジ,https://shop.example/b,ぶー,22,2026-09-02,https://cast.example/p/3,https://www.instagram.com/boo__b/reels/,https://x.com/bob,,
+fukui,ShopD,福井,スナック,https://shop.example/d,でー,25,2026/09/10,https://cast.example/p/6,https://www.instagram.com/%20dee.x,,,
+tokyo,ShopE,渋谷,キャバクラ,https://shop.example/e,え,20,2026/09/10,,https://www.instagram.com/p/Cabc123/,,,
+tokyo,ShopE,渋谷,キャバクラ,https://shop.example/e,お,20,,,https://www.pokepara.jp/tokyo/shop/1/,,,
+tokyo,ShopE,渋谷,キャバクラ,https://shop.example/e,か,20,,,,https://x.com/kaka,,
+tokyo,ShopF,銀座,クラブ,https://shop.example/f,く,26,2026/09/10,https://cast.example/p/16,https://www.instagram.com/alice_1/,,,
