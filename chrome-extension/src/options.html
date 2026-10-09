@@ -2,33 +2,92 @@
 <html lang="ja">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <title>フォロー補助の設定</title>
-    <style>
-      body { font: 14px/1.6 system-ui, sans-serif; max-width: 520px; margin: 24px auto; padding: 0 16px; color: #0f1419; }
-      label { display: block; margin: 16px 0 4px; font-weight: 600; }
-      input { width: 100%; padding: 6px 8px; font: inherit; box-sizing: border-box; }
-      input[type="checkbox"] { width: auto; }
-      .hint { color: #536471; font-size: 12px; margin: 4px 0 0; }
-      button { margin-top: 20px; padding: 8px 16px; font: inherit; }
-      #saved { margin-left: 8px; color: #00813a; }
-    </style>
+    <link rel="stylesheet" href="options.css" />
   </head>
   <body>
-    <h1>フォロー補助の設定</h1>
-    <p class="hint">この拡張はフォローボタンを押しません。フォローは必ずご自身で押してください。</p>
-    <form id="form">
-      <label for="enabled"><input type="checkbox" id="enabled" /> 自動でタブを閉じる（ON/OFF）</label>
-      <label for="delay">フォローしてからタブを閉じるまでの秒数</label>
-      <input id="delay" type="number" min="0" max="10" step="0.5" />
-      <p class="hint">0〜10秒。初期値は 1.5 秒です。</p>
-      <label for="autoDelay">存在しない・凍結・フォロー済みのタブを閉じるまでの秒数</label>
-      <input id="autoDelay" type="number" min="0" max="60" step="0.5" />
-      <p class="hint">0〜60秒。初期値は 15 秒です。開いてから状態が分かった時点から数えます。</p>
-      <label for="server">WebサービスのURL</label>
-      <input id="server" type="url" placeholder="http://127.0.0.1:8787" />
-      <p class="hint">http://127.0.0.1 または http://localhost のみ指定できます。</p>
-      <button type="submit">保存</button><span id="saved" hidden>保存しました</span>
-    </form>
+    <!-- アイコンは lucide（ISC License）。Webサービスと同じ形を使う -->
+    <header class="topbar">
+      <span class="brand">
+        <span class="brand-mark">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
+        </span>
+        <span>フォロー補助<b>.</b></span>
+      </span>
+    </header>
+
+    <main class="page">
+      <div class="page-heading">
+        <span class="heading-tile">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+        </span>
+        <div>
+          <p class="eyebrow">Extension settings</p>
+          <h1>フォロー補助の設定</h1>
+          <p class="lead">X / Instagram のプロフィールタブを閉じるタイミングと、結果を知らせる Webサービスを設定します。</p>
+        </div>
+      </div>
+
+      <p class="tip">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+        <span><strong>この拡張はフォローボタンを押しません。</strong>フォローは必ずご自身で押してください。</span>
+      </p>
+
+      <form id="form" class="card">
+        <section class="section">
+          <h2 class="section-title">タブを閉じる</h2>
+          <label class="switch-row" for="enabled">
+            <span class="field">
+              <span class="field-label">自動でタブを閉じる</span>
+              <span class="hint">ツールバーのアイコンをクリックしても ON / OFF できます。</span>
+            </span>
+            <input type="checkbox" id="enabled" class="switch" />
+          </label>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">閉じるまでの時間</h2>
+          <label class="field" for="delay">
+            <span class="field-label">フォローしてからタブを閉じるまでの秒数</span>
+            <span class="input-unit">
+              <input id="delay" type="number" min="0" max="10" step="0.5" />
+              <span>秒</span>
+            </span>
+            <span class="hint">0〜10秒。初期値は 1.5 秒です。</span>
+          </label>
+          <label class="field" for="autoDelay">
+            <span class="field-label">存在しない・凍結・フォロー済みのタブを閉じるまでの秒数</span>
+            <span class="input-unit">
+              <input id="autoDelay" type="number" min="0" max="60" step="0.5" />
+              <span>秒</span>
+            </span>
+            <span class="hint">0〜60秒。初期値は 15 秒です。開いてから状態が分かった時点から数えます。</span>
+          </label>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Webサービスとの連携</h2>
+          <label class="field" for="server">
+            <span class="field-label">WebサービスのURL</span>
+            <input id="server" type="url" placeholder="http://127.0.0.1:8787" />
+            <span class="hint">http://127.0.0.1 または http://localhost のみ指定できます。</span>
+          </label>
+        </section>
+
+        <div class="form-actions">
+          <span id="saved" class="saved" role="status" hidden>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            保存しました
+          </span>
+          <button type="submit" class="btn">
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            保存
+          </button>
+        </div>
+      </form>
+    </main>
     <script src="settings.js"></script>
     <script src="options.js"></script>
   </body>
