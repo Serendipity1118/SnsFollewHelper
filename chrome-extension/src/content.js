@@ -23,17 +23,48 @@
 
   // ---- 表示 ----
 
+  // Webサービス・設定画面と同じ見た目（エラー色のトースト）。ページのCSSが効かないよう Shadow DOM に入れる。
+  // アイコンは lucide（ISC License）の alert-triangle と x。
+  const TOAST_HTML = `
+    <style>
+      :host { all: initial; }
+      .box {
+        position: fixed; left: 50%; bottom: 24px; z-index: 2147483647; transform: translateX(-50%);
+        display: flex; align-items: flex-start; gap: 10px; box-sizing: border-box;
+        width: max-content; max-width: min(440px, calc(100vw - 32px)); padding: 12px 12px 12px 16px;
+        border: 1px solid #efc8c2; border-radius: 10px; background: #fff5f3; color: #a33329;
+        box-shadow: 0 8px 40px #1e3d3b25;
+        font: 13px/1.6 Inter, "Noto Sans JP", "Yu Gothic UI", "Hiragino Sans", Meiryo, system-ui, sans-serif;
+      }
+      svg { width: 17px; height: 17px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .icon { margin-top: 2px; }
+      p { margin: 0; }
+      b { display: block; font-size: 11px; letter-spacing: 0.04em; }
+      button { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; opacity: 0.75; }
+      button:hover { background: #a3332914; opacity: 1; }
+      button:focus-visible { outline: 3px solid #279782; outline-offset: 2px; }
+      @media (prefers-color-scheme: dark) {
+        .box { border-color: #5a2f2a; background: #2e1f1d; color: #ff8a80; box-shadow: 0 8px 40px #00000066; }
+        button:hover { background: #ff8a801f; }
+      }
+    </style>
+    <div class="box" role="status">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+      <p><b>フォロー補助</b><span class="text"></span></p>
+      <button type="button" aria-label="閉じる"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </div>`;
+
+  /** 1件だけ出す。新しいものが来たら古いものは消す。 */
   function toast(text) {
-    const box = document.createElement("div");
-    box.textContent = `フォロー補助: ${text}`;
-    box.setAttribute("role", "status");
-    Object.assign(box.style, {
-      position: "fixed", right: "16px", bottom: "16px", zIndex: "2147483647", maxWidth: "360px",
-      padding: "10px 14px", borderRadius: "8px", background: "#b42318", color: "#fff",
-      font: "14px/1.5 system-ui, sans-serif", boxShadow: "0 4px 16px rgba(0,0,0,.3)",
-    });
-    document.body.appendChild(box);
-    setTimeout(() => box.remove(), TOAST_MS);
+    document.querySelector(".follow-helper-toast")?.remove();
+    const host = document.createElement("div");
+    host.className = "follow-helper-toast";
+    const root = host.attachShadow({ mode: "open" });
+    root.innerHTML = TOAST_HTML; // 固定の文字列だけ。メッセージは下で textContent に入れる
+    root.querySelector(".text").textContent = text;
+    root.querySelector("button").addEventListener("click", () => host.remove());
+    document.body.appendChild(host);
+    setTimeout(() => host.remove(), TOAST_MS);
   }
 
   // ---- 1プロフィール分の監視 ----
