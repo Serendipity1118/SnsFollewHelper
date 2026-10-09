@@ -6,6 +6,7 @@ import '../core/domain.dart';
 import '../core/safety/safety_policy.dart';
 import '../providers.dart';
 import 'common.dart';
+import 'theme.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key, required this.owner});
@@ -54,6 +55,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           title: '安全マージン設定',
           text:
               '直近1時間：15件\n直近24時間：60件\n運用元・SNS別に新規フォローを集計\n累積5件で休憩案内を1回表示\nセッション上限・起動間隔・強制休憩なし',
+          icon: Icons.shield_outlined,
         ),
         const Text(SafetyPolicy.notice),
         OutlinedButton(
@@ -85,13 +87,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         const Divider(),
         Text('削除対象の運用元：${widget.owner.displayName}'),
-        OutlinedButton(
+        OutlinedButton.icon(
+          style: AppPalette.of(context).dangerButton,
           onPressed: busy ? null : () => delete(true),
-          child: const Text('処理履歴のみ削除'),
+          icon: const Icon(Icons.history_toggle_off),
+          label: const Text('処理履歴のみ削除'),
         ),
-        OutlinedButton(
+        OutlinedButton.icon(
+          style: AppPalette.of(context).dangerButton,
           onPressed: busy ? null : () => delete(false),
-          child: const Text('全対象削除'),
+          icon: const Icon(Icons.delete_outline),
+          label: const Text('全対象削除'),
         ),
         if (busy) const LinearProgressIndicator(),
       ],
@@ -188,7 +194,7 @@ class _AccountManagementScreenState
         ),
         if (busy) const LinearProgressIndicator(),
         for (final a in accounts)
-          Card(
+          ListCard(
             child: ListTile(
               title: Text('${a.platform.label} · ${a.displayName}'),
               subtitle: Text(
@@ -219,7 +225,8 @@ class _AccountManagementScreenState
                 ),
           child: const Text('サンプルデータを読み込む'),
         ),
-        TextButton(
+        OutlinedButton(
+          style: AppPalette.of(context).dangerButton,
           onPressed:
               busy ||
                   accounts.any(
@@ -255,7 +262,10 @@ class AboutScreen extends StatelessWidget {
     body: PageBody(
       children: [
         Image.asset('assets/follow_work_notes_icon.png', height: 120),
-        Text('SnsFollowHelper', style: Theme.of(context).textTheme.headlineSmall),
+        Text(
+          'SnsFollowHelper',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
         const Text(
           'バージョン 1.0.0\n\n利用者が用意したプロフィール一覧と、手動で判断した作業結果を端末内に保存するアプリです。',
         ),

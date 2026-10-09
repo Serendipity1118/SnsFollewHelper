@@ -92,6 +92,13 @@ class AppPalette {
   static AppPalette of(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark ? dark : light;
 
+  /// 削除など取り消せない操作のボタン（淡い赤の背景に濃い赤の文字。web の .btn-danger）
+  ButtonStyle get dangerButton => OutlinedButton.styleFrom(
+    foregroundColor: dead,
+    backgroundColor: deadSoft,
+    side: BorderSide(color: deadLine),
+  );
+
   /// カード・パネルの薄い影（web の 0 3px 14px）
   List<BoxShadow> get cardShadow => [
     BoxShadow(color: shadow, blurRadius: 14, offset: const Offset(0, 3)),

@@ -162,7 +162,7 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
           Padding(padding: const EdgeInsets.all(16), child: Text(result!)),
         if (busy) const LinearProgressIndicator(),
         Expanded(
-          child: ListView.builder(
+          child: CardListView(
             itemCount: widget.rows.length,
             itemBuilder: (context, i) {
               final r = widget.rows[i];
@@ -275,6 +275,7 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
           title: '対象CSV',
           text:
               '全SNS・全運用元・全状態の対象をUTF-8 BOM付きで出力します。未割り当て、スキップ、アーカイブ済み運用元の対象も含みます。再インポートでは新規対象だけを追加します。',
+          icon: Icons.table_chart_outlined,
         ),
         FilledButton(
           onPressed: busy ? null : () => export(false),
@@ -283,6 +284,7 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
         const InfoCard(
           title: '完全バックアップ ZIP',
           text: '運用元・対象・操作履歴・中断情報を保存します。復元時には内容を確認し、既存データを優先して不足分を追加します。',
+          icon: Icons.inventory_2_outlined,
         ),
         OutlinedButton(
           onPressed: busy ? null : () => export(true),
