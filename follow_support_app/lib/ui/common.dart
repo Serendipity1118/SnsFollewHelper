@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'theme.dart';
 
 String dateLabel(DateTime? date) => date == null
     ? '—'
@@ -64,28 +65,124 @@ class InfoCard extends StatelessWidget {
   final String text;
   final IconData icon;
   @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return SurfaceCard(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
+          IconTile(icon: icon, size: 40),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                   title,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(fontSize: 15),
                 ),
-              ),
-            ],
+                const SizedBox(height: 6),
+                Text(text, style: TextStyle(color: p.muted)),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          Text(text),
         ],
       ),
-    ),
-  );
+    );
+  }
+}
+
+/// 白いカード＋枠線＋薄い影（Webサービスの .card）
+class SurfaceCard extends StatelessWidget {
+  const SurfaceCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(20),
+  });
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: p.line),
+        boxShadow: p.cardShadow,
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+  }
+}
+
+/// 淡いアクセント色の角丸タイルに入れたアイコン（Webサービスの .heading-tile）
+class IconTile extends StatelessWidget {
+  const IconTile({super.key, required this.icon, this.size = 48});
+  final IconData icon;
+  final double size;
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: p.accentSoft,
+        borderRadius: BorderRadius.circular(size / 4),
+      ),
+      child: Icon(icon, color: p.accent, size: size * 0.48),
+    );
+  }
+}
+
+/// 各画面の先頭。アイコンのタイル・小さな英字ラベル・見出し・説明。
+class PageHeading extends StatelessWidget {
+  const PageHeading({
+    super.key,
+    required this.icon,
+    required this.eyebrow,
+    required this.title,
+    this.lead,
+  });
+  final IconData icon;
+  final String eyebrow;
+  final String title;
+  final String? lead;
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    final lead = this.lead;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        IconTile(icon: icon),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                eyebrow.toUpperCase(),
+                style: TextStyle(
+                  color: p.muted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.6,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(title, style: Theme.of(context).textTheme.headlineSmall),
+              if (lead != null) ...[
+                const SizedBox(height: 4),
+                Text(lead, style: TextStyle(color: p.muted, fontSize: 13)),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
