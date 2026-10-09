@@ -5,6 +5,7 @@ import '../core/db/app_database.dart';
 import '../core/domain.dart';
 import '../providers.dart';
 import 'common.dart';
+import 'theme.dart';
 import 'work_screen.dart';
 
 class TargetListScreen extends ConsumerStatefulWidget {
@@ -147,7 +148,7 @@ class _TargetListScreenState extends ConsumerState<TargetListScreen> {
         Expanded(
           child: rows.isEmpty && !busy
               ? const Center(child: Text('該当する対象はありません'))
-              : ListView.builder(
+              : CardListView(
                   itemCount: rows.length,
                   itemBuilder: (context, index) {
                     final t = rows[index];
@@ -346,13 +347,24 @@ class _TargetDetailScreenState extends ConsumerState<TargetDetailScreen> {
           if (busy) const LinearProgressIndicator(),
           if (error != null) Text(error!),
           if (t != null) ...[
-            Text(
-              '@${t.username}',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            SelectableText(t.profileUrl),
-            Text(
-              'あなたが登録した状態：${t.status.label}\n取込：${dateLabel(t.importedAt)}\n処理：${dateLabel(t.processedAt)}\n最終起動：${dateLabel(t.lastOpenedAt)}\n起動回数：${t.openCount}',
+            SurfaceCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 6,
+                children: [
+                  Text(
+                    '@${t.username}',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  SelectableText(
+                    t.profileUrl,
+                    style: TextStyle(color: AppPalette.of(context).muted),
+                  ),
+                  Text(
+                    'あなたが登録した状態：${t.status.label}\n取込：${dateLabel(t.importedAt)}\n処理：${dateLabel(t.processedAt)}\n最終起動：${dateLabel(t.lastOpenedAt)}\n起動回数：${t.openCount}',
+                  ),
+                ],
+              ),
             ),
             FilledButton(
               onPressed: busy
@@ -485,7 +497,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         Expanded(
           child: rows.isEmpty && !busy
               ? const Center(child: Text('操作履歴はありません'))
-              : ListView.builder(
+              : CardListView(
                   itemCount: rows.length,
                   itemBuilder: (context, i) {
                     final l = rows[i];

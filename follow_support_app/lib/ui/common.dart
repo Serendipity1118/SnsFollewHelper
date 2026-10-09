@@ -118,6 +118,38 @@ class SurfaceCard extends StatelessWidget {
   }
 }
 
+/// 一覧の1行分のカード。ListTile のタップの波紋がカードの中に収まるよう Card で包む。
+class ListCard extends StatelessWidget {
+  const ListCard({super.key, required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: AppPalette.of(context).cardShadow,
+    ),
+    child: Card(clipBehavior: Clip.antiAlias, child: child),
+  );
+}
+
+/// 行を白いカードで並べる一覧（Webサービスの今日の名簿の行と同じ見た目）
+class CardListView extends StatelessWidget {
+  const CardListView({
+    super.key,
+    required this.itemCount,
+    required this.itemBuilder,
+  });
+  final int itemCount;
+  final IndexedWidgetBuilder itemBuilder;
+  @override
+  Widget build(BuildContext context) => ListView.separated(
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+    itemCount: itemCount,
+    separatorBuilder: (_, _) => const SizedBox(height: 8),
+    itemBuilder: (context, i) => ListCard(child: itemBuilder(context, i)),
+  );
+}
+
 /// 淡いアクセント色の角丸タイルに入れたアイコン（Webサービスの .heading-tile）
 class IconTile extends StatelessWidget {
   const IconTile({super.key, required this.icon, this.size = 48});

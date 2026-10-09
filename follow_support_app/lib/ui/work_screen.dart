@@ -100,6 +100,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen>
                 const InfoCard(
                   title: '未処理の対象はありません',
                   text: 'CSVを取り込むか、一覧から対象を未処理に戻せます。',
+                  icon: Icons.inbox_outlined,
                 ),
                 OutlinedButton(
                   onPressed: () => controller.load(targetId: widget.targetId),
@@ -132,6 +133,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen>
                     title: '安全マージンにより起動を停止中',
                     text:
                         '直近1時間15件／24時間60件の上限です。\n再開可能：${dateLabel(controller.decision?.retryAt)}\n結果入力や履歴・出力は引き続き利用できます。',
+                    icon: Icons.shield_outlined,
                   ),
                 if (!manual &&
                     !controller.unresolved &&
@@ -153,6 +155,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen>
                       title: '前回の起動記録が中断されました',
                       text:
                           'SNSでプロフィールを確認できた場合だけ結果を登録してください。開いていない場合は「作業をキャンセル」を選択してください。起動成功や結果を自動判定していません。',
+                      icon: Icons.warning_amber_outlined,
                     ),
                   const Text('結果を選択してください。SNSの状態は自動判定していません。'),
                   for (final status in TargetStatus.values.where(
@@ -185,6 +188,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen>
                     const InfoCard(
                       title: '少し休憩しませんか',
                       text: '新規フォローの登録が累積5件に達しました。必要に応じて休憩してください。これは今回だけの案内です。',
+                      icon: Icons.coffee_outlined,
                     ),
                   FilledButton(
                     onPressed: controller.busy ? null : () => controller.load(),
