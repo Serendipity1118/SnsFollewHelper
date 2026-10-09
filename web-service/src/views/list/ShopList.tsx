@@ -61,9 +61,8 @@ function ShopRow({ shop, base }: { shop: ShopWithQueue; base: string | undefined
 export function ShopList({ query, items, total, page, pageSize }: ShopListProps) {
   return (
     <>
-      <PageSummary page={page} pageSize={pageSize} total={total} />
-      {items.length ? (
-        <div class="table-wrap">
+      <div class="table-wrap card">
+        {items.length ? (
           <table>
             <thead>
               <tr>
@@ -80,11 +79,14 @@ export function ShopList({ query, items, total, page, pageSize }: ShopListProps)
               ))}
             </tbody>
           </table>
+        ) : (
+          <p class="empty">条件に合う店舗はありません。</p>
+        )}
+        <div class="table-foot">
+          <PageSummary page={page} pageSize={pageSize} total={total} />
+          <Pager page={page} pageSize={pageSize} total={total} href={(p) => listHref({ ...query, page: p })} />
         </div>
-      ) : (
-        <p class="empty">条件に合う店舗はありません。</p>
-      )}
-      <Pager page={page} pageSize={pageSize} total={total} href={(p) => listHref({ ...query, page: p })} />
+      </div>
     </>
   );
 }

@@ -22,21 +22,25 @@ export function Pager({ page, pageSize, total, href }: PagerProps) {
   return (
     <nav class="pager" aria-label="ページ">
       {page > 1 ? (
-        <a class="btn" href={href(page - 1)}>
+        <a class="btn btn-small" href={href(page - 1)}>
           ← 前へ
         </a>
       ) : (
-        <span />
+        <span class="btn btn-small" aria-disabled="true">
+          ← 前へ
+        </span>
       )}
       <span class="muted">
         {page} / {lastPage}
       </span>
       {page < lastPage ? (
-        <a class="btn" href={href(page + 1)}>
+        <a class="btn btn-small" href={href(page + 1)}>
           次へ →
         </a>
       ) : (
-        <span />
+        <span class="btn btn-small" aria-disabled="true">
+          次へ →
+        </span>
       )}
     </nav>
   );
