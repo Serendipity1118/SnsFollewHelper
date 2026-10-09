@@ -1,13 +1,13 @@
-# Render the store images from assets/follow_work_notes_icon.png.
+# Render the store images from assets/app_icon.png.
 #   powershell -ExecutionPolicy Bypass -File tool\render_store_assets.ps1
 # Writes store/play-icon-512.png, store/app-store-icon-1024.png and
 # store/play-feature-1024x500.png under follow_support_app/.
 #
-# The source icon has rounded corners on a transparent canvas (even its middle
-# is alpha 252). Both stores round the corners themselves and neither supports
-# transparency (Google Play renders alpha as black, App Store Connect rejects
-# it), so the square inside the rounded shape is cropped and flattened onto an
-# opaque background.
+# Both stores round the corners themselves and neither supports transparency
+# (Google Play renders alpha as black, App Store Connect rejects it), so the
+# source is the full-bleed square icon. If a rounded icon on a transparent
+# canvas is given instead, the square inside the rounded shape is cropped and
+# flattened onto an opaque background.
 #
 # Kept ASCII only: Windows PowerShell 5.1 misreads UTF-8 scripts without a BOM,
 # so Japanese text is written as \u escapes.
@@ -17,8 +17,9 @@ $app = Split-Path -Parent $PSScriptRoot
 $outDir = Join-Path $app 'store'
 New-Item -ItemType Directory -Force $outDir | Out-Null
 
-$source = [System.Drawing.Bitmap]::FromFile((Join-Path $app 'assets\follow_work_notes_icon.png'))
-$navy = [System.Drawing.Color]::FromArgb(255, 10, 47, 102)
+$source = [System.Drawing.Bitmap]::FromFile((Join-Path $app 'assets\app_icon.png'))
+# Brand teal (#137D64), the background of the logo
+$brand = [System.Drawing.Color]::FromArgb(255, 19, 125, 100)
 
 # Walk each diagonal inward until the pixel is part of the icon body. The shape
 # is convex, so once all four crop corners are inside, the whole crop is.
@@ -54,7 +55,7 @@ function New-Canvas([int]$w, [int]$h) {
 
 function Save-Icon([int]$size, [string]$name) {
     $bmp, $g = New-Canvas $size $size
-    $g.Clear($navy)
+    $g.Clear($brand)
     $dest = New-Object System.Drawing.Rectangle(0, 0, $size, $size)
     $g.DrawImage($source, $dest, $crop, [System.Drawing.GraphicsUnit]::Pixel)
     $path = Join-Path $outDir $name
@@ -72,8 +73,8 @@ $bmp, $g = New-Canvas 1024 500
 $gradient = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
     (New-Object System.Drawing.Point(0, 0)),
     (New-Object System.Drawing.Point(1024, 500)),
-    [System.Drawing.Color]::FromArgb(255, 14, 111, 134),
-    [System.Drawing.Color]::FromArgb(255, 8, 36, 92))
+    [System.Drawing.Color]::FromArgb(255, 23, 138, 111),
+    [System.Drawing.Color]::FromArgb(255, 11, 77, 62))
 $g.FillRectangle($gradient, 0, 0, 1024, 500)
 
 $iconSize = 280
@@ -87,7 +88,7 @@ $clip.AddArc($iconX + $iconSize - 2 * $radius, $iconY + $iconSize - 2 * $radius,
 $clip.AddArc($iconX, $iconY + $iconSize - 2 * $radius, 2 * $radius, 2 * $radius, 90, 90)
 $clip.CloseFigure()
 $g.SetClip($clip)
-$g.FillRectangle((New-Object System.Drawing.SolidBrush($navy)), $iconX, $iconY, $iconSize, $iconSize)
+$g.FillRectangle((New-Object System.Drawing.SolidBrush($brand)), $iconX, $iconY, $iconSize, $iconSize)
 $g.DrawImage($source, (New-Object System.Drawing.Rectangle($iconX, $iconY, $iconSize, $iconSize)), $crop, [System.Drawing.GraphicsUnit]::Pixel)
 $g.ResetClip()
 

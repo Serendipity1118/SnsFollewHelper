@@ -86,14 +86,11 @@ svg.i {
 }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 750; letter-spacing: -0.4px; }
 .brand b { color: var(--accent); }
+/* ロゴ画像（角丸・背景込み） */
 .brand-mark {
-  width: 31px;
+  width: 34px;
   height: 34px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: var(--on-accent);
-  display: grid;
-  place-items: center;
+  display: block;
 }
 
 /* ---- page ---- */

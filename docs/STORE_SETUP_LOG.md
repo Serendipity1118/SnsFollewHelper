@@ -58,8 +58,9 @@
 | `follow_support_app/store/play-feature-1024x500.png` | Play のフィーチャーグラフィック |
 | `follow_support_app/store/screenshots/android-ja/*.png` | Play のスマートフォン用 6 枚 (1080x1920) |
 
-画像は `follow_support_app/tool/render_store_assets.ps1` で作り直せる。元アイコンは角丸で四隅が透過
-(中央も alpha 252) なので、角丸の内側の正方形を切り出して不透明な背景に重ねている。
+画像は `follow_support_app/tool/render_store_assets.ps1` で作り直せる。元にするのは角まで塗った
+不透明な正方形アイコン `follow_support_app/assets/app_icon.png`（ロゴの原画と作り方は [`docs/brand/README.md`](brand/README.md)）。
+2026-10-09 にロゴを差し替えた。Play Console に登録済みのアイコンとフィーチャーグラフィックは旧デザインのままなので、次の更新時に入れ替える。
 
 ## 申告の根拠
 

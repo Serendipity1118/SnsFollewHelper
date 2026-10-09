@@ -370,4 +370,18 @@ describe("pages", () => {
     expect((await request("/static/../../package.json")).status).toBe(404);
     expect((await request("/static/nope.js")).status).toBe(404);
   });
+
+  test("serves the logo images as PNG and links them from every page", async () => {
+    const { request } = setup();
+    for (const name of ["logo-mark.png", "favicon-32.png", "favicon-16.png", "apple-touch-icon.png"]) {
+      const res = await request(`/static/${name}`);
+      expect(res.headers.get("content-type")).toBe("image/png");
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      expect([...bytes.slice(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
+    }
+    const html = await (await request("/")).text();
+    expect(html).toContain('rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png"');
+    expect(html).toContain('rel="apple-touch-icon" href="/static/apple-touch-icon.png"');
+    expect(html).toContain('class="brand-mark" src="/static/logo-mark.png"');
+  });
 });

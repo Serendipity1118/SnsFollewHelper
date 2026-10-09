@@ -34,9 +34,7 @@ function Sidebar({ platform, active }: Pick<LayoutProps, "platform" | "active">)
   return (
     <aside class="sidebar" id="sidebar" aria-label="メニュー">
       <a class="brand" href={pageHref(platform, "/")}>
-        <span class="brand-mark">
-          <Icon name="list-checks" />
-        </span>
+        <img class="brand-mark" src="/static/logo-mark.png" alt="" width="34" height="34" />
         <span class="brand-name">
           フォロー優先キュー<b>.</b>
         </span>
@@ -96,6 +94,9 @@ export function Layout({ title, platform, active, scripts = [], children }: Layo
         <title>
           {title} | {brand}
         </title>
+        <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16.png" />
+        <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
         <link rel="stylesheet" href="/static/style.css" />
         {/* 描画前にテーマを決めて、ちらつきを防ぐ（defer しない） */}
         <script src="/static/shell.js"></script>

@@ -150,10 +150,7 @@ class _StartupScreenState extends ConsumerState<StartupScreen> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(14),
-                      child: Image.asset(
-                        'assets/follow_work_notes_icon.png',
-                        height: 64,
-                      ),
+                      child: Image.asset('assets/app_logo.png', height: 64),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
