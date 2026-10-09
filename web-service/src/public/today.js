@@ -7,11 +7,12 @@
   const ASSIGNED = "当日";
   const DONE = "済";
   const RESULTS = [
-    { status: DONE, label: "フォローした", className: "btn-follow" },
-    { status: "スキップ", label: "見送る", className: "" },
-    { status: "死垢", label: "死垢", className: "btn-dead" },
+    { status: DONE, label: "フォローした", className: "btn-follow", icon: "check" },
+    { status: "スキップ", label: "見送る", className: "", icon: "skip" },
+    { status: "死垢", label: "死垢", className: "btn-dead", icon: "user-x" },
   ];
   const RESULT_BADGE = { 済: "フォローした", 既フォロー: "フォロー済みだった", スキップ: "見送り", 死垢: "死垢" };
+  const RESULT_BADGE_CLASS = { 済: "badge-follow", 既フォロー: "badge-already", スキップ: "badge-skip", 死垢: "badge-dead" };
   const TOAST_TEXT = { 済: "をフォロー済みにしました", スキップ: "を見送りました", 死垢: "を死垢にしました" };
   const OPEN_BATCH = 5;
   const TOAST_MS = 6000;
@@ -66,6 +67,19 @@
     }
     for (const child of children) if (child) node.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
     return node;
+  }
+
+  const SVG_NS = "http://www.w3.org/2000/svg";
+
+  /** Layout.tsx が埋め込んだアイコン定義（#i-名前）を参照する。 */
+  function icon(name) {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("class", "i");
+    svg.setAttribute("aria-hidden", "true");
+    const use = document.createElementNS(SVG_NS, "use");
+    use.setAttribute("href", `#i-${name}`);
+    svg.appendChild(use);
+    return svg;
   }
 
   const fmt = (n) => Number(n).toLocaleString("ja-JP");
@@ -133,14 +147,18 @@
 
   // ---- 指標 ----
 
-  function tile(label, value, lines, ratio) {
-    const children = [el("p", { class: "stat-label", text: label }), el("p", { class: "stat-value", text: value })];
+  /** 指標のカード。value は大きな数字、unit はその後ろの小さな文字（「/ 15 件」など）。 */
+  function tile({ iconName, label, value, unit = "" }, lines, ratio) {
+    const children = [
+      el("p", { class: "stat-label" }, [icon(iconName), label]),
+      el("p", { class: "stat-value" }, [value, unit ? el("small", { text: unit }) : null]),
+    ];
     if (ratio !== undefined) {
       const pct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
       children.push(el("div", { class: "meter", role: "presentation" }, [el("span", { style: `width:${pct}%` })]));
     }
     for (const line of lines) if (line) children.push(line);
-    return el("div", { class: "stat" }, children);
+    return el("div", { class: "stat card" }, children);
   }
 
   const sub = (text, className = "stat-sub") => el("p", { class: className, text });
@@ -154,20 +172,22 @@
       ? sub(`上限に到達${q.retryAt ? `（${formatTime(q.retryAt)} 以降に再開）` : ""}`, "stat-sub stat-warn")
       : sub(`あと ${fmt(q.remaining)} 件フォローできます`);
     const detail = sub(`1時間 ${q.followed1h}/${s.hourlyLimit}・24時間 ${q.followed24h}/${s.dailyLimit}`, "stat-sub muted");
-    return tile("今日の名簿", total ? `${done} / ${total} 件` : "まだありません", [quotaLine, detail], total ? done / total : 0);
+    const value = total ? { value: String(done), unit: `/ ${total} 件` } : { value: "まだありません" };
+    return tile({ iconName: "calendar-check", label: "今日の名簿", ...value }, [quotaLine, detail], total ? done / total : 0);
   }
 
   function warmupTile() {
     const w = state.summary.warmup;
-    if (!w) return tile("ウォームアップ", "未開始", [sub("最初にフォローした日から数えます")]);
+    const head = { iconName: "flame", label: "ウォームアップ" };
+    if (!w) return tile({ ...head, value: "未開始" }, [sub("最初にフォローした日から数えます")]);
     const limit = state.settings.dailyLimit;
     const lines = [sub(`目安 1日 ${w.min}〜${w.max} 件`), sub(`${w.auto ? "最初のフォロー" : "運用開始"} ${w.startDate} から`, "stat-sub muted")];
     if (limit < w.min || limit > w.max) {
       const note = limit < w.min ? "目安より少なめ" : "目安を超えています";
       lines.push(sub(`24時間の上限 ${limit} 件は${note}`, "stat-sub stat-warn"));
-      lines.push(el("button", { type: "button", class: "btn btn-small", id: "adjustLimit", dataset: { limit: String(w.max) }, text: `上限を ${w.max} 件にする` }));
+      lines.push(el("button", { type: "button", class: "btn btn-small btn-soft", id: "adjustLimit", dataset: { limit: String(w.max) }, text: `上限を ${w.max} 件にする` }));
     }
-    return tile("ウォームアップ", `${w.week}週目`, lines);
+    return tile({ ...head, value: String(w.week), unit: "週目" }, lines);
   }
 
   function renderStats() {
@@ -175,9 +195,13 @@
     const top = pendingTop.map((p) => `${p.label} ${fmt(p.count)}`).join("・");
     $("stats").replaceChildren(
       todayTile(),
-      tile("累計フォロー", `${fmt(followed)} / ${fmt(followCap)}`, [sub(`総フォロー上限まであと ${fmt(Math.max(0, followCap - followed))} 件`)], followed / followCap),
+      tile(
+        { iconName: "trending-up", label: "累計フォロー", value: fmt(followed), unit: `/ ${fmt(followCap)}` },
+        [sub(`総フォロー上限まであと ${fmt(Math.max(0, followCap - followed))} 件`)],
+        followed / followCap,
+      ),
       warmupTile(),
-      tile("名簿の残り（未着手）", `${fmt(left)} 件`, [top ? sub(top, "stat-sub muted") : null]),
+      tile({ iconName: "inbox", label: "名簿の残り（未着手）", value: fmt(left), unit: "件" }, [top ? sub(top, "stat-sub muted") : null]),
     );
     const q = state.quota;
     $("quotaAlert").hidden = !q.blocked;
@@ -189,68 +213,71 @@
   // ---- 一覧 ----
 
   function resultButtons(item) {
-    return RESULTS.map(({ status, label, className }) =>
-      el("button", { type: "button", class: `btn ${className}`, dataset: { action: "mark", status, handle: item.handle }, text: label }),
+    return RESULTS.map(({ status, label, className, icon: iconName }) =>
+      el("button", { type: "button", class: `btn btn-small ${className}`, dataset: { action: "mark", status, handle: item.handle } }, [icon(iconName), label]),
     );
   }
 
   function opener(item) {
-    if (!canOpen()) return el("span", { class: "btn btn-primary", "aria-disabled": "true", text: "上限到達" });
-    return el("a", { class: "btn btn-primary", href: openUrl(item.handle), target: "_blank", rel: "noopener", dataset: { action: "open", handle: item.handle }, text: `${LABEL}で開く` });
+    if (!canOpen()) return el("span", { class: "btn btn-small btn-primary", "aria-disabled": "true", text: "上限到達" });
+    return el(
+      "a",
+      { class: "btn btn-small btn-primary", href: openUrl(item.handle), target: "_blank", rel: "noopener", dataset: { action: "open", handle: item.handle } },
+      [icon("external-link"), `${LABEL}で開く`],
+    );
   }
+
+  const metaItem = (iconName, text) => el("span", {}, [icon(iconName), text]);
 
   function renderRow(item, index) {
     const opened = state.opened.has(item.handle);
     const poke = httpUrl(item.profileUrl);
-    const meta = [
-      `${item.prefectureLabel || item.prefecture} / ${item.shop}`,
-      `ポケパラ更新 ${item.lastUpdated || "不明"}`,
-      item.occurrences > 1 ? `出現${item.occurrences}回（グループ垢かも）` : "",
-    ].filter(Boolean);
     const title = el("div", { class: "row-title" }, [
-      el("span", { class: "row-num", text: String(index + 1) }),
       el("strong", { class: "row-name", text: item.castName || "(名前なし)" }),
       el("span", { class: "row-handle", text: `@${item.handle}` }),
       opened ? el("span", { class: "badge badge-opened", text: "開いた" }) : null,
     ]);
     const metaLine = el("p", { class: "row-meta" }, [
-      meta.join("　"),
-      poke ? el("a", { href: poke, target: "_blank", rel: "noopener noreferrer", class: "row-link", text: "ポケパラ" }) : null,
+      metaItem("map-pin", `${item.prefectureLabel || item.prefecture} / ${item.shop}`),
+      metaItem("clock", `ポケパラ更新 ${item.lastUpdated || "不明"}`),
+      item.occurrences > 1 ? el("span", { class: "badge badge-skip", text: `出現${item.occurrences}回（グループ垢かも）` }) : null,
+      poke ? el("a", { href: poke, target: "_blank", rel: "noopener noreferrer", class: "row-link" }, ["ポケパラ", icon("external-link")]) : null,
     ]);
-    const actions = el("div", { class: "row-actions" }, [opener(item), el("span", { class: "sep", "aria-hidden": "true" }), ...resultButtons(item)]);
+    const actions = el("div", { class: "row-actions" }, [opener(item), ...resultButtons(item)]);
     const active = item.handle === state.active;
     return el("article", { class: `row${active ? " active" : ""}${opened ? " opened" : ""}`, dataset: { handle: item.handle }, "aria-current": active ? "true" : undefined }, [
+      el("span", { class: "row-num", text: String(index + 1) }),
       el("div", { class: "row-body" }, [title, metaLine]),
       actions,
     ]);
   }
 
-  function renderDoneRow(item, index) {
-    const badgeClass = item.status === DONE || item.status === "既フォロー" ? "badge-follow" : item.status === "死垢" ? "badge-dead" : "";
+  function renderDoneRow(item) {
     return el("article", { class: "row done", dataset: { handle: item.handle } }, [
+      el("span", { class: `badge ${RESULT_BADGE_CLASS[item.status] || ""}`, text: RESULT_BADGE[item.status] || item.status }),
       el("div", { class: "row-title" }, [
-        el("span", { class: "row-num", text: String(index + 1) }),
-        el("span", { class: "row-name", text: item.castName || "(名前なし)" }),
+        el("strong", { class: "row-name", text: item.castName || "(名前なし)" }),
         el("span", { class: "row-handle", text: `@${item.handle}` }),
-        el("span", { class: `badge ${badgeClass}`, text: RESULT_BADGE[item.status] || item.status }),
       ]),
-      el("button", { type: "button", class: "btn btn-small btn-ghost", dataset: { action: "revert", handle: item.handle }, text: "戻す" }),
+      el("button", { type: "button", class: "btn btn-small btn-ghost", dataset: { action: "revert", handle: item.handle } }, [icon("rotate-ccw"), "戻す"]),
     ]);
   }
 
   function nextButton(label) {
-    return el("button", { type: "button", class: "btn btn-primary btn-large", dataset: { action: "next" }, text: label });
+    return el("button", { type: "button", class: "btn btn-primary btn-large", dataset: { action: "next" } }, [icon("plus"), label]);
   }
 
   function emptyCard() {
     const batch = state.settings.batchSize;
     if (!state.summary.pending) {
-      return el("div", { class: "empty-card" }, [
+      return el("div", { class: "empty-card card" }, [
+        icon("inbox"),
         el("h2", { text: "未着手の名簿がありません" }),
         el("p", {}, [el("a", { href: `${BASE}/admin#data`, text: "管理 → データ更新" }), " でキャスト名簿（pokepara_all_casts.csv）を取り込んでください。"]),
       ]);
     }
-    return el("div", { class: "empty-card" }, [
+    return el("div", { class: "empty-card card" }, [
+      icon("calendar-check"),
       el("h2", { text: "今日の名簿はまだありません" }),
       el("p", { text: `優先度の高い順に ${batch} 件を今日の名簿に入れます。` }),
       nextButton(`今日の ${batch} 件を出す`),
@@ -259,9 +286,9 @@
 
   function finishedCard() {
     const batch = state.settings.batchSize;
-    const children = [el("h2", { text: "今日の名簿はすべて終わりました" }), el("p", { class: "muted", text: "結果は保存済みです。" })];
+    const children = [icon("check"), el("h2", { text: "今日の名簿はすべて終わりました" }), el("p", { text: "結果は保存済みです。お疲れさまでした。" })];
     if (state.summary.pending) children.push(nextButton(`さらに ${batch} 件出す`));
-    return el("div", { class: "empty-card finished" }, children);
+    return el("div", { class: "empty-card card finished" }, children);
   }
 
   /** 処理済みは下にまとめて畳む（件数が多い日でも未処理がすぐ見えるように）。 */
@@ -270,9 +297,9 @@
     const breakdown = Object.entries(counts)
       .map(([status, n]) => `${RESULT_BADGE[status] || status} ${n}`)
       .join("・");
-    const details = el("details", { class: "done-section", open: state.showDone }, [
-      el("summary", { text: `処理済み ${done.length} 件（${breakdown}）` }),
-      el("div", { class: "rows" }, done.map((item, i) => renderDoneRow(item, i))),
+    const details = el("details", { class: "done-section card", open: state.showDone }, [
+      el("summary", {}, [icon("chevron-right"), el("span", { text: `処理済み ${done.length} 件（${breakdown}）` })]),
+      el("div", { class: "done-rows" }, done.map(renderDoneRow)),
     ]);
     details.addEventListener("toggle", () => (state.showDone = details.open));
     return details;
@@ -293,9 +320,13 @@
     $("date").textContent = state.date ? `（${state.date}）` : "";
     $("progress").textContent = total ? `残り ${left.length} 件 / ${total} 件` : "";
     $("bulk").hidden = left.length === 0;
+    $("release").hidden = left.length === 0;
+    const navRemain = $("navRemain");
+    navRemain.textContent = String(left.length);
+    navRemain.hidden = left.length === 0;
     const { targets, reopenOnly } = batchTargets();
     const verb = reopenOnly ? "まとめて開き直す" : "まとめて開く";
-    $("open5").textContent = targets.length ? `${verb}（${targets.length}件）` : "まとめて開く";
+    $("open5Label").textContent = targets.length ? `${verb}（${targets.length}件）` : "まとめて開く";
     $("open5").disabled = targets.length === 0;
   }
 
@@ -437,6 +468,7 @@
   $("open5").addEventListener("click", openBatch);
 
   $("toastUndo").addEventListener("click", () => undo());
+  $("toastClose").addEventListener("click", () => ($("toast").hidden = true));
 
   $("resetQuota").addEventListener("click", (ev) => {
     const ok = window.confirm(
@@ -454,7 +486,6 @@
 
   $("release").addEventListener("click", (ev) => {
     if (!window.confirm("今日の名簿で結果の付いていない人をすべて未着手に戻します。よいですか？")) return;
-    ev.currentTarget.closest("details").open = false;
     run(ev.currentTarget, async () => {
       const data = await api(`${API}/today/release`, { method: "POST" });
       showMessage(`${data.released} 件を未着手に戻しました。`);

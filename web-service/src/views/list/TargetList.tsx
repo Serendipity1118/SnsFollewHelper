@@ -1,6 +1,7 @@
 import type { Target } from "../../db/targetRepository";
 import { prefectureLabel } from "../../domain/prefectures";
 import { statusLabel } from "../../domain/statusLabels";
+import { Icon } from "../icons";
 import { listHref, safeHttpUrl, type ListQuery } from "../links";
 import { PageSummary, Pager } from "../Pager";
 
@@ -16,8 +17,15 @@ export interface TargetListProps {
 // 状態チップの並び（作業の流れ順）。ここにない状態は後ろに付ける。
 const STATUS_ORDER = ["未", "当日", "済", "既フォロー", "スキップ", "死垢", "店舗垢候補"];
 
-const statusClass = (status: string) =>
-  ({ 済: "badge-follow", 死垢: "badge-dead", 当日: "badge-today" })[status] ?? "";
+const STATUS_BADGE: Record<string, string> = {
+  済: "badge-follow",
+  既フォロー: "badge-already",
+  スキップ: "badge-skip",
+  死垢: "badge-dead",
+  当日: "badge-today",
+  店舗垢候補: "badge-shop",
+};
+const statusClass = (status: string) => STATUS_BADGE[status] ?? "";
 
 function StatusChips({ query, statusCounts }: Pick<TargetListProps, "query" | "statusCounts">) {
   const statuses = Object.keys(statusCounts).sort(
@@ -45,10 +53,12 @@ function TargetRow({ target }: { target: Target }) {
   const profile = safeHttpUrl(target.profileUrl);
   return (
     <tr>
-      <td class="num">{target.priority}</td>
+      <td>
+        <span class="prio">{target.priority}</span>
+      </td>
       <td>
         <strong>{target.castName}</strong>
-        <div class="muted">@{target.handle}</div>
+        <div class="muted handle">@{target.handle}</div>
       </td>
       <td>
         {prefectureLabel(target.prefecture)}
@@ -64,8 +74,9 @@ function TargetRow({ target }: { target: Target }) {
       </td>
       <td>
         {profile ? (
-          <a href={profile} target="_blank" rel="noopener noreferrer">
+          <a class="ext" href={profile} target="_blank" rel="noopener noreferrer">
             ポケパラ
+            <Icon name="external-link" />
           </a>
         ) : null}
       </td>
@@ -77,9 +88,8 @@ export function TargetList({ query, statusCounts, items, total, page, pageSize }
   return (
     <>
       <StatusChips query={query} statusCounts={statusCounts} />
-      <PageSummary page={page} pageSize={pageSize} total={total} />
-      {items.length ? (
-        <div class="table-wrap">
+      <div class="table-wrap card">
+        {items.length ? (
           <table>
             <thead>
               <tr>
@@ -97,11 +107,14 @@ export function TargetList({ query, statusCounts, items, total, page, pageSize }
               ))}
             </tbody>
           </table>
+        ) : (
+          <p class="empty">条件に合う人はいません。</p>
+        )}
+        <div class="table-foot">
+          <PageSummary page={page} pageSize={pageSize} total={total} />
+          <Pager page={page} pageSize={pageSize} total={total} href={(p) => listHref({ ...query, page: p })} />
         </div>
-      ) : (
-        <p class="empty">条件に合う人はいません。</p>
-      )}
-      <Pager page={page} pageSize={pageSize} total={total} href={(p) => listHref({ ...query, page: p })} />
+      </div>
     </>
   );
 }

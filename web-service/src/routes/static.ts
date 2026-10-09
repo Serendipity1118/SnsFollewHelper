@@ -7,7 +7,7 @@ const TYPES = {
 } as const;
 
 // 配信するファイルは許可リストのみ（パストラバーサル対策）。起動時に読み込む。
-const FILES = ["today.js", "forms.js", "style.css"] as const;
+const FILES = ["today.js", "forms.js", "shell.js", "style.css"] as const;
 
 export const STATIC_ASSETS: ReadonlyMap<string, { body: string; type: string }> = new Map(
   FILES.map((name) => {
