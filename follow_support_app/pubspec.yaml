@@ -66,15 +66,16 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: assets/follow_work_notes_icon.png
-  adaptive_icon_background: "#071B4F"
-  adaptive_icon_foreground: assets/follow_work_notes_icon.png
+  # 角まで塗った正方形（iOS / 旧Android）と、透過の記号だけ（Android のアダプティブアイコン）
+  image_path: assets/app_icon.png
+  adaptive_icon_background: "#137D64"
+  adaptive_icon_foreground: assets/app_icon_foreground.png
   min_sdk_android: 24
   remove_alpha_ios: true
 
 flutter_native_splash:
   color: "#F5F8F7"
-  image: assets/follow_work_notes_icon.png
+  image: assets/app_logo.png
   android: true
   ios: true
   web: false
@@ -82,8 +83,8 @@ flutter_native_splash:
   ios_content_mode: center
   android_12:
     color: "#F5F8F7"
-    image: assets/follow_work_notes_icon.png
-    icon_background_color: "#F5F8F7"
+    image: assets/app_icon_foreground.png
+    icon_background_color: "#137D64"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -96,8 +97,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/follow_work_notes_icon.png
-    - assets/sns_follow_helper_logo.png
+    - assets/app_logo.png
     - assets/sample_targets.csv
     - assets/privacy_policy.txt
 

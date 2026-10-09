@@ -158,8 +158,8 @@ WSIBrowser の 2 つの手順書に沿って進める。**以下はこのアプ�
 ### 5-4. ストア素材
 
 1. **アイコンとフィーチャーグラフィック。**
-   `follow_support_app/assets/follow_work_notes_icon.png` と
-   `sns_follow_helper_logo.png` がある。Play は 512x512、App Store は 1024x1024、
+   `follow_support_app/assets/app_icon.png`（角まで塗った正方形）があり、
+   `follow_support_app/tool/render_store_assets.ps1` で `store/` に書き出せる。Play は 512x512、App Store は 1024x1024、
    フィーチャーグラフィックは 1024x500。**いずれも透過なし、角丸なしの四角で作る。**
    Play は透過を黒く塗り、App Store Connect は透過を弾く。
    WSIBrowser の `render_store_icon.mjs` / `render_feature_graphic.mjs` が参考になる。

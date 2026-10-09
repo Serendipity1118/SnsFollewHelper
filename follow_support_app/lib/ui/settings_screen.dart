@@ -261,7 +261,7 @@ class AboutScreen extends StatelessWidget {
     appBar: AppBar(title: const Text('このアプリについて')),
     body: PageBody(
       children: [
-        Image.asset('assets/follow_work_notes_icon.png', height: 120),
+        Image.asset('assets/app_logo.png', height: 120),
         Text(
           'SnsFollowHelper',
           style: Theme.of(context).textTheme.headlineSmall,

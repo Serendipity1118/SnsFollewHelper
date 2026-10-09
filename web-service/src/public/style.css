@@ -161,14 +161,11 @@ svg.i {
   border-right: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 10px; padding: 0 4px; color: var(--text); text-decoration: none; }
+/* ロゴ画像（角丸・背景込み） */
 .brand-mark {
-  width: 31px;
+  width: 34px;
   height: 34px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: var(--on-accent);
-  display: grid;
-  place-items: center;
+  display: block;
   flex-shrink: 0;
 }
 .brand-name { font-size: 16px; font-weight: 750; letter-spacing: -0.4px; line-height: 1.3; }
