@@ -92,12 +92,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     ),
     body: PageBody(
       children: [
-        Text(
-          '${widget.owner.platform.label} · ${widget.owner.displayName}',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        Text(
-          '運用元ID：${widget.owner.id.substring(0, 8)}${widget.owner.isSample ? ' · サンプル' : ''}',
+        PageHeading(
+          icon: Icons.space_dashboard_outlined,
+          eyebrow: 'Dashboard',
+          title: '${widget.owner.platform.label} · ${widget.owner.displayName}',
+          lead:
+              '運用元ID：${widget.owner.id.substring(0, 8)}${widget.owner.isSample ? ' · サンプル' : ''}',
         ),
         if (error != null) Text(error!),
         InfoCard(title: '未処理の対象', text: '$pending 件', icon: Icons.checklist),

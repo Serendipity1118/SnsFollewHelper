@@ -6,6 +6,7 @@ import 'providers.dart';
 import 'ui/common.dart';
 import 'ui/dashboard_screen.dart';
 import 'ui/settings_screen.dart';
+import 'ui/theme.dart';
 
 class FollowSupportApp extends StatelessWidget {
   const FollowSupportApp({super.key});
@@ -13,16 +14,25 @@ class FollowSupportApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     title: 'SnsFollowHelper',
     debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff176c67)),
-      scaffoldBackgroundColor: const Color(0xfff5f8f7),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(),
-      ),
-      appBarTheme: const AppBarTheme(centerTitle: false),
-    ),
+    theme: buildAppTheme(Brightness.light),
+    darkTheme: buildAppTheme(Brightness.dark),
     home: const StartupScreen(),
+  );
+}
+
+/// カードの中のフォーム。項目のあいだに一定の間隔をあける。
+class _OwnerForm extends StatelessWidget {
+  const _OwnerForm({required this.children});
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      for (final (i, child) in children.indexed) ...[
+        if (i > 0) const SizedBox(height: 14),
+        child,
+      ],
+    ],
   );
 }
 
@@ -136,12 +146,28 @@ class _StartupScreenState extends ConsumerState<StartupScreen> {
           ? const Center(child: CircularProgressIndicator())
           : PageBody(
               children: [
-                Image.asset('assets/follow_work_notes_icon.png', height: 100),
-                Text(
-                  '今日の作業を、ひとつずつ。',
-                  style: Theme.of(context).textTheme.headlineSmall,
+                Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.asset(
+                        'assets/follow_work_notes_icon.png',
+                        height: 64,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        '今日の作業を、ひとつずつ。',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ),
+                  ],
                 ),
-                const Text('対象リストと手動の作業結果を端末内で管理します。フォロー操作はSNSアプリで行ってください。'),
+                Text(
+                  '対象リストと手動の作業結果を端末内で管理します。フォロー操作はSNSアプリで行ってください。',
+                  style: TextStyle(color: AppPalette.of(context).muted),
+                ),
                 if (error != null) ...[
                   Text(error!),
                   OutlinedButton(onPressed: refresh, child: const Text('再試行')),
@@ -150,56 +176,68 @@ class _StartupScreenState extends ConsumerState<StartupScreen> {
                   const InfoCard(
                     title: '結果未登録の作業があります',
                     text: '前回の運用元を確認すると、結果入力を再開します。',
+                    icon: Icons.pending_actions_outlined,
                   ),
-                DropdownButtonFormField<PlatformType>(
-                  initialValue: platform,
-                  decoration: const InputDecoration(labelText: 'SNS'),
-                  items: PlatformType.values
-                      .map(
-                        (p) => DropdownMenuItem(value: p, child: Text(p.label)),
-                      )
-                      .toList(),
-                  onChanged: pendingOwner != null
-                      ? null
-                      : (p) {
-                          platform = p!;
-                          refresh();
-                        },
-                ),
-                if (choices.isNotEmpty)
-                  DropdownButtonFormField<String>(
-                    key: ValueKey('$platform:$selected'),
-                    initialValue: selected,
-                    decoration: const InputDecoration(labelText: '運用元'),
-                    isExpanded: true,
-                    items: choices
-                        .map(
-                          (a) => DropdownMenuItem(
-                            value: a.id,
-                            child: Text(
-                              '${a.displayName}（${a.id.substring(0, 6)}）',
-                            ),
+                SurfaceCard(
+                  child: _OwnerForm(
+                    children: [
+                      DropdownButtonFormField<PlatformType>(
+                        initialValue: platform,
+                        decoration: const InputDecoration(labelText: 'SNS'),
+                        items: PlatformType.values
+                            .map(
+                              (p) => DropdownMenuItem(
+                                value: p,
+                                child: Text(p.label),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: pendingOwner != null
+                            ? null
+                            : (p) {
+                                platform = p!;
+                                refresh();
+                              },
+                      ),
+                      if (choices.isNotEmpty)
+                        DropdownButtonFormField<String>(
+                          key: ValueKey('$platform:$selected'),
+                          initialValue: selected,
+                          decoration: const InputDecoration(labelText: '運用元'),
+                          isExpanded: true,
+                          items: choices
+                              .map(
+                                (a) => DropdownMenuItem(
+                                  value: a.id,
+                                  child: Text(
+                                    '${a.displayName}（${a.id.substring(0, 6)}）',
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: pendingOwner != null
+                              ? null
+                              : (id) => setState(() => selected = id),
+                        ),
+                      if (choices.isEmpty)
+                        const Text('このSNSの運用元を登録してください。保存するのは表示名だけです。'),
+                      if (pendingOwner == null) ...[
+                        TextField(
+                          controller: name,
+                          decoration: const InputDecoration(
+                            labelText: '新しい運用元の表示名',
                           ),
-                        )
-                        .toList(),
-                    onChanged: pendingOwner != null
-                        ? null
-                        : (id) => setState(() => selected = id),
+                          onSubmitted: (_) => add(),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: add,
+                          icon: const Icon(Icons.person_add_alt),
+                          label: const Text('運用元を登録'),
+                        ),
+                      ],
+                    ],
                   ),
-                if (choices.isEmpty)
-                  const Text('このSNSの運用元を登録してください。保存するのは表示名だけです。'),
-                if (pendingOwner == null) ...[
-                  TextField(
-                    controller: name,
-                    decoration: const InputDecoration(labelText: '新しい運用元の表示名'),
-                    onSubmitted: (_) => add(),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: add,
-                    icon: const Icon(Icons.person_add_alt),
-                    label: const Text('運用元を登録'),
-                  ),
-                ],
+                ),
                 FilledButton(
                   onPressed: selected == null ? null : start,
                   child: const Text('この運用元で始める'),

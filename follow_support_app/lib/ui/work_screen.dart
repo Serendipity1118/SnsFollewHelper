@@ -5,6 +5,7 @@ import '../core/domain.dart';
 import '../features/work/work_controller.dart';
 import '../providers.dart';
 import 'common.dart';
+import 'theme.dart';
 
 class WorkScreen extends ConsumerStatefulWidget {
   const WorkScreen({super.key, required this.owner, this.targetId});
@@ -106,15 +107,26 @@ class _WorkScreenState extends ConsumerState<WorkScreen>
                 ),
               ],
               if (t != null) ...[
-                Text(
-                  '@${t.username}',
-                  style: Theme.of(context).textTheme.headlineMedium,
+                SurfaceCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 6,
+                    children: [
+                      Text(
+                        '@${t.username}',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      SelectableText(
+                        t.profileUrl,
+                        style: TextStyle(color: AppPalette.of(context).muted),
+                      ),
+                      if (t.isSample) const Text('サンプル体験：外部サイトは開きません。'),
+                      Text('あなたが登録した状態：${t.status.label}'),
+                      if (t.memo.isNotEmpty) Text('メモ：${t.memo}'),
+                      if (t.groupName.isNotEmpty) Text('グループ：${t.groupName}'),
+                    ],
+                  ),
                 ),
-                SelectableText(t.profileUrl),
-                if (t.isSample) const Text('サンプル体験：外部サイトは開きません。'),
-                Text('あなたが登録した状態：${t.status.label}'),
-                if (t.memo.isNotEmpty) Text('メモ：${t.memo}'),
-                if (t.groupName.isNotEmpty) Text('グループ：${t.groupName}'),
                 if (controller.phase == WorkPhase.blocked)
                   InfoCard(
                     title: '安全マージンにより起動を停止中',
