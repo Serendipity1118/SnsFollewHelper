@@ -143,7 +143,11 @@ describe("content script", () => {
     sendMessage.mockResolvedValue({ close: false, error: "Webサービスに接続できませんでした。" });
     await visit("frank", header("1-unfollow", "frank"));
     await vi.advanceTimersByTimeAsync(AUTO_CLOSE_DELAY_MS);
-    expect(document.body.textContent).toContain("Webサービスに接続できませんでした。");
+    // ページのCSSに崩されないよう、トーストは Shadow DOM の中に描く
+    const host = document.querySelector(".follow-helper-toast");
+    expect(host.shadowRoot.querySelector('[role="status"]').textContent).toContain("Webサービスに接続できませんでした。");
+    host.shadowRoot.querySelector('button[aria-label="閉じる"]').dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(document.querySelector(".follow-helper-toast")).toBeNull();
   });
 
   test("does nothing while turned off", async () => {
