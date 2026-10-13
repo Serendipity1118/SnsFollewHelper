@@ -33,6 +33,13 @@ const server = serve({ fetch: app.fetch, port, hostname: HOSTNAME }, (info) => {
   console.info(`フォロー優先キュー（X / Instagram）: http://${HOSTNAME}:${info.port}  (DB: ${dbPath} [${dbSource}])`);
 });
 
+server.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code !== "EADDRINUSE") throw err;
+  console.error(`ポート ${port} は別のプロセスが使用中です。そのプロセスを止めるか、環境変数 PORT で別のポートを指定してください。`);
+  db.close();
+  process.exit(1);
+});
+
 function shutdown() {
   server.close();
   db.close();
