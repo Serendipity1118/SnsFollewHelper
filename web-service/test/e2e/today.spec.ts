@@ -75,6 +75,8 @@ test("取込 → 名簿を出す → フォローした → リロード後も�
   const first = pendingRows(page).first();
   await expect(first).toContainText("@frank");
   await expect(first).toContainText("東京");
+  await expect(first.locator(".row-meta")).toContainText("更新日");
+  await expect(first.locator(".row-meta")).not.toContainText("ポケパラ更新");
   await expect(first.getByRole("link", { name: "Xで開く" })).toHaveAttribute("href", "/go/frank");
   await first.getByRole("button", { name: "フォローした" }).click();
   await expect(page.locator("#progress")).toHaveText("残り 10 件 / 11 件");

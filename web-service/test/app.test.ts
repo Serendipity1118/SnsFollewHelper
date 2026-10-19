@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { createApp } from "../src/app";
 import { createTestService, fixture } from "./support";
@@ -320,6 +321,36 @@ describe("pages", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/html");
     expect(await res.text()).toContain("自動フォロー");
+  });
+
+  test("non-link copy no longer names the source site", async () => {
+    const { request } = await seeded();
+
+    const admin = await (await request("/admin")).text();
+    expect(admin).not.toContain("ポケパラ");
+    expect(admin).not.toContain("pokepara_all_");
+    expect(admin).toContain("最新の CSV を取り込むときに使います。");
+    expect(admin).toContain(">キャスト名簿<");
+    expect(admin).toContain(">店舗一覧<");
+
+    const list = await (await request("/list")).text();
+    expect(list).not.toContain("ポケパラ更新");
+    expect(list).not.toContain("pokepara_all_");
+    expect(list).toContain("取り込んだキャストと店舗の一覧です");
+    expect(list).toContain("更新日");
+    expect(list).toContain("ポケパラ");
+
+    const shops = await (await request("/list?tab=shops")).text();
+    expect(shops).not.toContain("pokepara_all_shops.csv");
+    expect(shops).toContain("店舗一覧のCSVを取り込んでください");
+  });
+
+  test("today script uses neutral labels for updates and imports", () => {
+    const script = readFileSync(new URL("../src/public/today.js", import.meta.url), "utf8");
+    expect(script).not.toContain("ポケパラ更新");
+    expect(script).not.toContain("pokepara_all_casts.csv");
+    expect(script).toContain('更新日 ${item.lastUpdated || "不明"}');
+    expect(script).toContain("キャスト名簿のCSV");
   });
 
   test.each([

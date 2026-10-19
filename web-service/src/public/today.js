@@ -239,7 +239,7 @@
     ]);
     const metaLine = el("p", { class: "row-meta" }, [
       metaItem("map-pin", `${item.prefectureLabel || item.prefecture} / ${item.shop}`),
-      metaItem("clock", `ポケパラ更新 ${item.lastUpdated || "不明"}`),
+      metaItem("clock", `更新日 ${item.lastUpdated || "不明"}`),
       item.occurrences > 1 ? el("span", { class: "badge badge-skip", text: `出現${item.occurrences}回（グループ垢かも）` }) : null,
       poke ? el("a", { href: poke, target: "_blank", rel: "noopener noreferrer", class: "row-link" }, ["ポケパラ", icon("external-link")]) : null,
     ]);
@@ -273,7 +273,7 @@
       return el("div", { class: "empty-card card" }, [
         icon("inbox"),
         el("h2", { text: "未着手の名簿がありません" }),
-        el("p", {}, [el("a", { href: `${BASE}/admin#data`, text: "管理 → データ更新" }), " でキャスト名簿（pokepara_all_casts.csv）を取り込んでください。"]),
+        el("p", {}, [el("a", { href: `${BASE}/admin#data`, text: "管理 → データ更新" }), " でキャスト名簿のCSVを取り込んでください。"]),
       ]);
     }
     return el("div", { class: "empty-card card" }, [

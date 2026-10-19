@@ -99,7 +99,7 @@ export function ListPage(props: ListPageProps) {
         icon="users"
         eyebrow="Roster"
         title="名簿"
-        lead="ポケパラから取り込んだキャストと店舗の一覧です。優先度の高い順に今日の名簿へ入ります。"
+        lead="取り込んだキャストと店舗の一覧です。優先度の高い順に今日の名簿へ入ります。"
         actions={<HeadingActions platform={props.platform} tab={query.tab} />}
       />
       <nav class="tabs" aria-label="名簿の種類">
@@ -121,7 +121,7 @@ export function ListPage(props: ListPageProps) {
       {props.view === "shops" ? (
         props.tabCounts.shops === 0 ? (
           <p class="empty card">
-            店舗一覧はまだありません。<a href={`${query.base ?? ""}/admin#data`}>管理 → データ更新</a> で pokepara_all_shops.csv を取り込んでください。
+            店舗一覧はまだありません。<a href={`${query.base ?? ""}/admin#data`}>管理 → データ更新</a> で店舗一覧のCSVを取り込んでください。
           </p>
         ) : (
           <ShopList {...props.list} />

@@ -96,7 +96,7 @@ export function TargetList({ query, statusCounts, items, total, page, pageSize }
                 <th>優先度</th>
                 <th>キャスト</th>
                 <th>地域・店舗</th>
-                <th>ポケパラ更新</th>
+                <th>更新日</th>
                 <th>状態</th>
                 <th></th>
               </tr>

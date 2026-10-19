@@ -149,18 +149,18 @@ export function AdminPage(props: AdminPageProps) {
 
       <div class="admin-grid">
         <section class="card panel" id="data">
-          <PanelHead title="データ更新" description="ポケパラから取り直した CSV を入れるときに使います。" />
+          <PanelHead title="データ更新" description="最新の CSV を取り込むときに使います。" />
           <div class="stack">
             <UploadForm
               platform={platform}
               name="casts"
-              title="キャスト名簿（pokepara_all_casts.csv）"
+              title="キャスト名簿"
               description={`${platform.csvColumn} 列から ${platform.label} の名簿を作ります。handle ごとに優先度を付け直します。フォローした・見送りなどの結果はそのまま残ります。${platform.label} 以外の名簿には影響しません。`}
             />
             <UploadForm
               platform={platform}
               name="shops"
-              title="店舗一覧（pokepara_all_shops.csv）"
+              title="店舗一覧"
               description="店舗名・店舗URL 列が必要。店舗一覧（X・Instagram 共通）を入れ替えます。名簿には影響しません。"
             />
           </div>

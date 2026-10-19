@@ -455,7 +455,7 @@
           <div class="heading-text">
             <div class="eyebrow">ROSTER</div>
             <h1>名簿</h1>
-            <p class="lead">ポケパラから取り込んだキャストと店舗の一覧です。優先度の高い順に今日の名簿へ入ります。</p>
+            <p class="lead">取り込んだキャストと店舗の一覧です。優先度の高い順に今日の名簿へ入ります。</p>
           </div>
           <div class="heading-actions">
             <a class="btn" href="#admin"><svg class="i" data-icon="upload"></svg>データを更新</a>
@@ -486,7 +486,7 @@
 
         <div class="card table-panel">
           <table>
-            <thead><tr><th>優先度</th><th>キャスト</th><th>地域・店舗</th><th>ポケパラ更新</th><th>状態</th><th></th></tr></thead>
+            <thead><tr><th>優先度</th><th>キャスト</th><th>地域・店舗</th><th>更新日</th><th>状態</th><th></th></tr></thead>
             <tbody id="rosterBody"></tbody>
           </table>
           <div class="table-foot">
@@ -520,19 +520,19 @@
 
         <div class="admin-grid">
           <div class="card panel">
-            <div class="panel-head"><div><h2>データ更新</h2><p>ポケパラのCSVを取り込みます。既存の結果は消えません。</p></div></div>
+            <div class="panel-head"><div><h2>データ更新</h2><p>最新のCSVを取り込みます。既存の結果は消えません。</p></div></div>
             <div class="stack">
               <div>
                 <div class="file-drop">
                   <svg class="i" data-icon="upload"></svg>
-                  <div class="grow"><strong>キャスト名簿</strong><code>pokepara_all_casts.csv</code></div>
+                  <div class="grow"><strong>キャスト名簿</strong></div>
                   <button class="btn sm">ファイルを選ぶ</button><button class="btn sm primary">取り込む</button>
                 </div>
                 <p class="result-line"><svg class="i" data-icon="check"></svg>取り込みました。個人 6,102 人（うち未着手 4,812 人）・店舗垢候補 138 件。</p>
               </div>
               <div class="file-drop">
                 <svg class="i" data-icon="upload"></svg>
-                <div class="grow"><strong>店舗一覧</strong><code>pokepara_all_shops.csv</code></div>
+                <div class="grow"><strong>店舗一覧</strong></div>
                 <button class="btn sm">ファイルを選ぶ</button><button class="btn sm primary" disabled>取り込む</button>
               </div>
             </div>
@@ -657,7 +657,7 @@ function rowHtml(q, isFirst, p) {
         <div class="row-title"><strong>${q.name}</strong><span class="handle">@${q.handle}</span>${isFirst ? '<span class="badge b-today">開いた</span>' : ""}</div>
         <div class="row-meta">
           <span>${icon("map-pin")}${q.pref} / ${q.shop}</span>
-          <span>${icon("clock")}ポケパラ更新 ${q.updated}</span>
+          <span>${icon("clock")}更新日 ${q.updated}</span>
           ${q.occ > 1 ? `<span class="badge b-skip">出現${q.occ}回（グループ垢かも）</span>` : ""}
           <a class="ext" href="#">ポケパラ${icon("external-link")}</a>
         </div>
